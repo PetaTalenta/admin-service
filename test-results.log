@@ -1,0 +1,84 @@
+[0;34m╔════════════════════════════════════════╗[0m
+[0;34m║  Admin Service Endpoint Testing       ║[0m
+[0;34m╚════════════════════════════════════════╝[0m
+
+[0;34m========================================[0m
+[0;34mPHASE 1: ADMIN AUTHENTICATION[0m
+[0;34m========================================[0m
+
+Test 1: Admin Login
+[0;32m✓ PASS[0m: Admin Login
+Test 2: Get Admin Profile
+[0;32m✓ PASS[0m: Get Admin Profile
+Test 3: Update Admin Profile
+[0;32m✓ PASS[0m: Update Admin Profile
+
+[0;34m========================================[0m
+[0;34mPHASE 2: USER MANAGEMENT[0m
+[0;34m========================================[0m
+
+Test 4: Get All Users
+[0;32m✓ PASS[0m: Get All Users
+Test 5: Get User by ID
+[0;31m✗ FAIL[0m: Get User by ID
+[1;33mResponse: {"success":false,"error":{"code":"UPSTREAM_ERROR","message":"A database error occurred"}}[0m
+Test 6: Update User Profile
+[0;32m✓ PASS[0m: Update User Profile
+Test 7: Update Token Balance
+[0;32m✓ PASS[0m: Update Token Balance
+
+[0;34m========================================[0m
+[0;34mPHASE 3: SYSTEM MONITORING & ANALYTICS[0m
+[0;34m========================================[0m
+
+Test 8: Get Global Statistics
+[0;31m✗ FAIL[0m: Get Global Statistics
+[1;33mResponse: {"success":false,"error":{"code":"UPSTREAM_ERROR","message":"A database error occurred"}}[0m
+Test 9: Get Job Monitor
+[0;32m✓ PASS[0m: Get Job Monitor
+Test 10: Get Queue Status
+[0;32m✓ PASS[0m: Get Queue Status
+Test 11: Get All Jobs (including deleted)
+[0;31m✗ FAIL[0m: Get All Jobs
+[1;33mResponse: {"success":false,"error":{"code":"UPSTREAM_ERROR","message":"A database error occurred"}}[0m
+
+[0;34m========================================[0m
+[0;34mPHASE 4: DEEP ANALYTICS[0m
+[0;34m========================================[0m
+
+Test 12: Get Daily Analytics
+[0;31m✗ FAIL[0m: Get Daily Analytics
+[1;33mResponse: {"success":false,"error":{"code":"UPSTREAM_ERROR","message":"A database error occurred"}}[0m
+Test 13: Search Assessments
+[0;31m✗ FAIL[0m: Search Assessments
+[1;33mResponse: {"success":false,"error":{"code":"UPSTREAM_ERROR","message":"A database error occurred"}}[0m
+[1;33mSkipping Test 14: No result ID available[0m
+
+[0;34m========================================[0m
+[0;34mPHASE 5: PERFORMANCE & SECURITY[0m
+[0;34m========================================[0m
+
+Test 15: Get Performance Report
+[0;31m✗ FAIL[0m: Get Performance Report
+[1;33mResponse: {"success":false,"error":{"code":"UPSTREAM_ERROR","message":"A database error occurred"}}[0m
+Test 16: Get Security Audit
+[0;31m✗ FAIL[0m: Get Security Audit
+[1;33mResponse: {"success":false,"error":{"code":"UPSTREAM_ERROR","message":"A database error occurred"}}[0m
+
+[0;34m========================================[0m
+[0;34mPHASE 6: ADMIN LOGOUT[0m
+[0;34m========================================[0m
+
+Test 17: Admin Logout
+[0;32m✓ PASS[0m: Admin Logout
+
+[0;34m========================================[0m
+[0;34mTEST SUMMARY[0m
+[0;34m========================================[0m
+
+Total Tests: [0;34m16[0m
+Passed: [0;32m9[0m
+Failed: [0;31m7[0m
+
+[0;31m✗ Some tests failed![0m
+
