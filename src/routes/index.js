@@ -6,10 +6,10 @@ const router = express.Router();
 
 // Admin auth (proxy to auth-service)
 // Admin login uses the same /auth/login endpoint but with admin credentials
-router.post('/admin/login', (req, res) => adminProxy('/auth/login', { method: 'POST', body: req.body }, req, res));
-router.get('/admin/profile', (req, res) => adminProxy('/auth/profile', { method: 'GET', headers: { authorization: req.headers.authorization } }, req, res));
-router.put('/admin/profile', (req, res) => adminProxy('/auth/profile', { method: 'PUT', body: req.body, headers: { authorization: req.headers.authorization } }, req, res));
-router.post('/admin/logout', (req, res) => adminProxy('/auth/logout', { method: 'POST', headers: { authorization: req.headers.authorization } }, req, res));
+router.post('/login', (req, res) => adminProxy('/auth/login', { method: 'POST', body: req.body }, req, res));
+router.get('/profile', (req, res) => adminProxy('/auth/profile', { method: 'GET', headers: { authorization: req.headers.authorization } }, req, res));
+router.put('/profile', (req, res) => adminProxy('/auth/profile', { method: 'PUT', body: req.body, headers: { authorization: req.headers.authorization } }, req, res));
+router.post('/logout', (req, res) => adminProxy('/auth/logout', { method: 'POST', headers: { authorization: req.headers.authorization } }, req, res));
 
 // Users management (proxy to archive-service admin)
 router.get('/users', (req, res) => usersProxy('/archive/admin/users', { method: 'GET', query: req.query, headers: { authorization: req.headers.authorization } }, req, res));

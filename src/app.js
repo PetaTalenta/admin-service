@@ -9,7 +9,12 @@ const routes = require('./routes');
 const app = express();
 
 app.use(helmet());
-app.use(cors({ origin: true, credentials: true }));
+app.use(cors({
+  origin: true, // Allow all origins for development
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Service-Key', 'X-Internal-Service']
+}));
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
@@ -23,7 +28,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use('/admin-service', routes);
+app.use('/admin', routes);
 
 app.get('/', (req, res) => {
   res.json({ success: true, message: 'ATMA Admin Service is running', version: '1.0.0', service: 'admin-service' });
