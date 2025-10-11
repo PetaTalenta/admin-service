@@ -5,8 +5,16 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 
 const routes = require('./routes');
+const directRoutes = require('./routes/direct');
+const { testConnection } = require('./config/database');
 
 const app = express();
+
+// Initialize database connection
+testConnection().catch(error => {
+  console.error('Failed to connect to database:', error);
+  process.exit(1);
+});
 
 app.use(helmet());
 app.use(cors({
@@ -28,10 +36,21 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use('/admin', routes);
+// Routes
+app.use('/admin', routes); // Legacy proxy routes
+app.use('/admin/direct', directRoutes); // New direct database routes
 
 app.get('/', (req, res) => {
-  res.json({ success: true, message: 'ATMA Admin Service is running', version: '1.0.0', service: 'admin-service' });
+  res.json({
+    success: true,
+    message: 'ATMA Admin Service is running',
+    version: '1.0.0',
+    service: 'admin-service',
+    features: {
+      proxy: 'Legacy proxy routes available at /admin/*',
+      direct: 'Direct database routes available at /admin/direct/*'
+    }
+  });
 });
 
 app.use('*', (req, res) => {

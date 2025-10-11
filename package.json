@@ -1,7 +1,7 @@
 {
-  "name": "atma-admin-service",
+  "name": "admin-service",
   "version": "1.0.0",
-  "description": "Admin Orchestrator Service for ATMA - Manages user accounts and token top-ups via internal services",
+  "description": "Admin Orchestrator Service for FutureGuide - Manages user accounts and token top-ups via internal services",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
@@ -12,12 +12,17 @@
   },
   "dependencies": {
     "axios": "^1.7.2",
+    "bcrypt": "^5.1.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "helmet": "^7.1.0",
     "joi": "^17.12.3",
-    "morgan": "^1.10.0"
+    "jsonwebtoken": "^9.0.0",
+    "morgan": "^1.10.0",
+    "pg": "^8.11.0",
+    "sequelize": "^6.32.0",
+    "ws": "^8.13.0"
   },
   "devDependencies": {
     "jest": "^29.7.0",
