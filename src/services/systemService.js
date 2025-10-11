@@ -27,7 +27,9 @@ class SystemService {
       };
 
       if (category) {
-        whereConditions.metric_category = category;
+        whereConditions.metric_name = {
+          [Op.like]: `${category}%`
+        };
       }
 
       const metrics = await SystemMetrics.findAll({
@@ -36,19 +38,18 @@ class SystemService {
         limit: 1000
       });
 
-      // Group metrics by category
+      // Group metrics by name prefix (category)
       const metricsByCategory = {};
       metrics.forEach(metric => {
-        const category = metric.metric_category;
-        if (!metricsByCategory[category]) {
-          metricsByCategory[category] = [];
+        const categoryName = metric.metric_name.split('_')[0] || 'general';
+        if (!metricsByCategory[categoryName]) {
+          metricsByCategory[categoryName] = [];
         }
-        metricsByCategory[category].push({
+        metricsByCategory[categoryName].push({
           name: metric.metric_name,
-          value: parseFloat(metric.metric_value),
-          unit: metric.metric_unit,
+          value: parseFloat(metric.metric_value || 0),
           recordedAt: metric.recorded_at,
-          metadata: metric.metadata
+          data: metric.metric_data
         });
       });
 

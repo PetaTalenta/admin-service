@@ -110,16 +110,21 @@ class AnalyticsService {
    */
   static async getUserActivity(params = {}) {
     try {
-      const { 
+      const {
         startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
         endDate = new Date(),
         period = 'daily'
       } = params;
 
+      // Map period to DATE_TRUNC format
+      const dateTruncPeriod = period === 'daily' ? 'day' :
+                             period === 'weekly' ? 'week' :
+                             period === 'monthly' ? 'month' : 'day';
+
       // Activity by analysis jobs
       const jobActivity = await AnalysisJob.findAll({
         attributes: [
-          [sequelize.fn('DATE_TRUNC', period, sequelize.col('created_at')), 'period'],
+          [sequelize.fn('DATE_TRUNC', dateTruncPeriod, sequelize.col('created_at')), 'period'],
           [sequelize.fn('COUNT', sequelize.col('id')), 'job_count'],
           [sequelize.fn('COUNT', sequelize.fn('DISTINCT', sequelize.col('user_id'))), 'unique_users']
         ],
@@ -128,29 +133,29 @@ class AnalyticsService {
             [Op.between]: [startDate, endDate]
           }
         },
-        group: [sequelize.fn('DATE_TRUNC', period, sequelize.col('created_at'))],
-        order: [[sequelize.fn('DATE_TRUNC', period, sequelize.col('created_at')), 'ASC']]
+        group: [sequelize.fn('DATE_TRUNC', dateTruncPeriod, sequelize.col('created_at'))],
+        order: [[sequelize.fn('DATE_TRUNC', dateTruncPeriod, sequelize.col('created_at')), 'ASC']]
       });
 
-      // Chat activity
-      const chatActivity = await Message.findAll({
-        attributes: [
-          [sequelize.fn('DATE_TRUNC', period, sequelize.col('created_at')), 'period'],
-          [sequelize.fn('COUNT', sequelize.col('id')), 'message_count'],
-          [sequelize.fn('COUNT', sequelize.fn('DISTINCT', sequelize.col('user_id'))), 'unique_users']
-        ],
-        where: {
-          created_at: {
-            [Op.between]: [startDate, endDate]
-          }
-        },
-        group: [sequelize.fn('DATE_TRUNC', period, sequelize.col('created_at'))],
-        order: [[sequelize.fn('DATE_TRUNC', period, sequelize.col('created_at')), 'ASC']]
+      // Chat activity - need to join through conversations to get user_id
+      const chatActivity = await sequelize.query(`
+        SELECT
+          DATE_TRUNC('${dateTruncPeriod}', m.created_at) as period,
+          COUNT(m.id) as message_count,
+          COUNT(DISTINCT c.user_id) as unique_users
+        FROM chat.messages m
+        JOIN chat.conversations c ON m.conversation_id = c.id
+        WHERE m.created_at BETWEEN :startDate AND :endDate
+        GROUP BY DATE_TRUNC('${dateTruncPeriod}', m.created_at)
+        ORDER BY period ASC
+      `, {
+        replacements: { startDate, endDate },
+        type: sequelize.QueryTypes.SELECT
       });
 
       // Most active users
       const mostActiveUsers = await sequelize.query(`
-        SELECT 
+        SELECT
           u.id,
           u.email,
           u.username,
@@ -158,9 +163,10 @@ class AnalyticsService {
           COUNT(DISTINCT m.id) as message_count,
           u.last_login
         FROM auth.users u
-        LEFT JOIN archive.analysis_jobs aj ON u.id = aj.user_id 
+        LEFT JOIN archive.analysis_jobs aj ON u.id = aj.user_id
           AND aj.created_at BETWEEN :startDate AND :endDate
-        LEFT JOIN chat.messages m ON u.id = m.user_id 
+        LEFT JOIN chat.conversations c ON u.id = c.user_id
+        LEFT JOIN chat.messages m ON c.id = m.conversation_id
           AND m.created_at BETWEEN :startDate AND :endDate
         WHERE u.user_type = 'user'
         GROUP BY u.id, u.email, u.username, u.last_login
@@ -181,9 +187,9 @@ class AnalyticsService {
             uniqueUsers: parseInt(item.dataValues.unique_users)
           })),
           chatActivity: chatActivity.map(item => ({
-            period: item.dataValues.period,
-            messageCount: parseInt(item.dataValues.message_count),
-            uniqueUsers: parseInt(item.dataValues.unique_users)
+            period: item.period,
+            messageCount: parseInt(item.message_count),
+            uniqueUsers: parseInt(item.unique_users)
           })),
           mostActiveUsers
         }
@@ -258,8 +264,8 @@ class AnalyticsService {
 
       // Activity level segmentation
       const activitySegmentation = await sequelize.query(`
-        SELECT 
-          CASE 
+        SELECT
+          CASE
             WHEN job_count = 0 AND message_count = 0 THEN 'Inactive'
             WHEN job_count + message_count BETWEEN 1 AND 5 THEN 'Low Activity'
             WHEN job_count + message_count BETWEEN 6 AND 20 THEN 'Medium Activity'
@@ -269,18 +275,19 @@ class AnalyticsService {
           AVG(job_count) as avg_jobs,
           AVG(message_count) as avg_messages
         FROM (
-          SELECT 
+          SELECT
             u.id,
             COUNT(DISTINCT aj.id) as job_count,
             COUNT(DISTINCT m.id) as message_count
           FROM auth.users u
           LEFT JOIN archive.analysis_jobs aj ON u.id = aj.user_id
-          LEFT JOIN chat.messages m ON u.id = m.user_id
+          LEFT JOIN chat.conversations c ON u.id = c.user_id
+          LEFT JOIN chat.messages m ON c.id = m.conversation_id
           WHERE u.user_type = 'user'
           GROUP BY u.id
         ) user_activity
         GROUP BY activity_level
-        ORDER BY 
+        ORDER BY
           CASE activity_level
             WHEN 'Inactive' THEN 1
             WHEN 'Low Activity' THEN 2
@@ -316,31 +323,36 @@ class AnalyticsService {
    */
   static async getUserRetention(params = {}) {
     try {
-      const { 
+      const {
         cohortPeriod = 'monthly' // weekly, monthly
       } = params;
+
+      // Map cohortPeriod to DATE_TRUNC format
+      const dateTruncCohortPeriod = cohortPeriod === 'weekly' ? 'week' :
+                                   cohortPeriod === 'monthly' ? 'month' : 'month';
 
       // Cohort analysis - users who registered in the same period and their return rate
       const cohortAnalysis = await sequelize.query(`
         WITH user_cohorts AS (
-          SELECT 
+          SELECT
             id,
             email,
-            DATE_TRUNC('${cohortPeriod}', created_at) as cohort_period,
+            DATE_TRUNC('${dateTruncCohortPeriod}', created_at) as cohort_period,
             created_at
           FROM auth.users
           WHERE user_type = 'user'
             AND created_at >= NOW() - INTERVAL '6 months'
         ),
         user_activity AS (
-          SELECT 
+          SELECT
             uc.id,
             uc.cohort_period,
             uc.created_at,
             COALESCE(MAX(aj.created_at), MAX(m.created_at)) as last_activity
           FROM user_cohorts uc
           LEFT JOIN archive.analysis_jobs aj ON uc.id = aj.user_id
-          LEFT JOIN chat.messages m ON uc.id = m.user_id
+          LEFT JOIN chat.conversations c ON uc.id = c.user_id
+          LEFT JOIN chat.messages m ON c.id = m.conversation_id
           GROUP BY uc.id, uc.cohort_period, uc.created_at
         )
         SELECT 

@@ -22,32 +22,36 @@ const Message = sequelize.define('Message', {
       key: 'id'
     }
   },
-  user_id: {
-    type: DataTypes.UUID,
-    allowNull: false,
-    field: 'user_id',
-    references: {
-      model: 'users',
-      key: 'id'
-    }
-  },
   content: {
     type: DataTypes.TEXT,
     allowNull: false
   },
-  message_type: {
+  sender_type: {
     type: DataTypes.STRING(20),
     allowNull: false,
     defaultValue: 'user',
-    field: 'message_type',
+    field: 'sender_type',
     validate: {
       isIn: [['user', 'assistant', 'system']]
     }
   },
-  tokens_used: {
-    type: DataTypes.INTEGER,
+  content_type: {
+    type: DataTypes.STRING(20),
     allowNull: true,
-    field: 'tokens_used'
+    defaultValue: 'text',
+    field: 'content_type',
+    validate: {
+      isIn: [['text', 'image', 'file']]
+    }
+  },
+  parent_message_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    field: 'parent_message_id',
+    references: {
+      model: 'messages',
+      key: 'id'
+    }
   },
   metadata: {
     type: DataTypes.JSONB,
@@ -66,13 +70,13 @@ const Message = sequelize.define('Message', {
       fields: ['conversation_id']
     },
     {
-      fields: ['user_id']
-    },
-    {
-      fields: ['message_type']
+      fields: ['sender_type']
     },
     {
       fields: ['created_at']
+    },
+    {
+      fields: ['parent_message_id']
     }
   ]
 });
@@ -83,10 +87,15 @@ Message.associate = function(models) {
     foreignKey: 'conversation_id',
     as: 'conversation'
   });
-  
-  Message.belongsTo(models.User, {
-    foreignKey: 'user_id',
-    as: 'user'
+
+  Message.belongsTo(models.Message, {
+    foreignKey: 'parent_message_id',
+    as: 'parentMessage'
+  });
+
+  Message.hasMany(models.Message, {
+    foreignKey: 'parent_message_id',
+    as: 'replies'
   });
 };
 

@@ -316,13 +316,13 @@ class DataService {
           LEFT JOIN auth.users u ON ar.user_id = u.id
           WHERE u.id IS NULL
           UNION ALL
-          SELECT 
-            'analysis_results' as table_name,
-            'job_id' as column_name,
+          SELECT
+            'analysis_jobs' as table_name,
+            'result_id' as column_name,
             COUNT(*) as orphaned_count
-          FROM archive.analysis_results ar
-          LEFT JOIN archive.analysis_jobs aj ON ar.job_id = aj.id
-          WHERE aj.id IS NULL
+          FROM archive.analysis_jobs aj
+          LEFT JOIN archive.analysis_results ar ON aj.result_id = ar.id
+          WHERE aj.result_id IS NOT NULL AND ar.id IS NULL
           UNION ALL
           SELECT 
             'user_activity_logs' as table_name,
@@ -343,11 +343,11 @@ class DataService {
       // Check for orphaned records
       if (checkTypes.includes('orphaned_records')) {
         const orphanedRecords = await sequelize.query(`
-          SELECT 
+          SELECT
             'analysis_jobs without results' as issue_type,
             COUNT(*) as count
           FROM archive.analysis_jobs aj
-          LEFT JOIN archive.analysis_results ar ON aj.id = ar.job_id
+          LEFT JOIN archive.analysis_results ar ON aj.result_id = ar.id
           WHERE ar.id IS NULL
             AND aj.status = 'completed'
             AND aj.completed_at IS NOT NULL

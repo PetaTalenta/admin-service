@@ -19,50 +19,32 @@ const SystemMetrics = sequelize.define('SystemMetrics', {
     field: 'metric_name'
   },
   metric_value: {
-    type: DataTypes.DECIMAL(10, 2),
-    allowNull: false,
+    type: DataTypes.DECIMAL,
+    allowNull: true,
     field: 'metric_value'
   },
-  metric_unit: {
-    type: DataTypes.STRING(20),
+  metric_data: {
+    type: DataTypes.JSONB,
     allowNull: true,
-    field: 'metric_unit'
-  },
-  metric_category: {
-    type: DataTypes.STRING(50),
-    allowNull: false,
-    field: 'metric_category'
+    field: 'metric_data'
   },
   recorded_at: {
     type: DataTypes.DATE,
-    allowNull: false,
+    allowNull: true,
     defaultValue: DataTypes.NOW,
     field: 'recorded_at'
-  },
-  metadata: {
-    type: DataTypes.JSONB,
-    allowNull: true,
-    defaultValue: {}
   }
 }, {
   tableName: 'system_metrics',
   schema: 'archive',
-  timestamps: true,
-  createdAt: 'created_at',
-  updatedAt: 'updated_at',
+  timestamps: false,
   underscored: true,
   indexes: [
     {
       fields: ['metric_name']
     },
     {
-      fields: ['metric_category']
-    },
-    {
       fields: ['recorded_at']
-    },
-    {
-      fields: ['created_at']
     }
   ]
 });

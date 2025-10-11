@@ -17,14 +17,14 @@ class InsightsService {
 
       // User engagement patterns
       const engagementPatterns = await sequelize.query(`
-        SELECT 
+        SELECT
           DATE_TRUNC('${period}', aj.created_at) as period,
           COUNT(DISTINCT aj.user_id) as active_users,
           COUNT(aj.id) as total_jobs,
           AVG(EXTRACT(EPOCH FROM (aj.completed_at - aj.created_at))) as avg_completion_time,
           COUNT(CASE WHEN ar.id IS NOT NULL THEN 1 END) as successful_jobs
         FROM archive.analysis_jobs aj
-        LEFT JOIN archive.analysis_results ar ON aj.id = ar.job_id
+        LEFT JOIN archive.analysis_results ar ON aj.result_id = ar.id
         WHERE aj.created_at BETWEEN :startDate AND :endDate
         GROUP BY DATE_TRUNC('${period}', aj.created_at)
         ORDER BY period ASC
@@ -140,13 +140,13 @@ class InsightsService {
 
       // Assessment completion rates
       const completionRates = await sequelize.query(`
-        SELECT 
+        SELECT
           COUNT(aj.id) as total_jobs,
           COUNT(ar.id) as completed_jobs,
           ROUND(COUNT(ar.id) * 100.0 / COUNT(aj.id), 2) as completion_rate,
           AVG(EXTRACT(EPOCH FROM (aj.completed_at - aj.created_at))) as avg_processing_time
         FROM archive.analysis_jobs aj
-        LEFT JOIN archive.analysis_results ar ON aj.id = ar.job_id
+        LEFT JOIN archive.analysis_results ar ON aj.result_id = ar.id
         WHERE aj.created_at BETWEEN :startDate AND :endDate
       `, {
         replacements: { startDate, endDate },
@@ -155,21 +155,21 @@ class InsightsService {
 
       // Score distribution analysis
       const scoreDistribution = await sequelize.query(`
-        SELECT 
-          CASE 
-            WHEN (analysis_result->>'overall_score')::numeric >= 90 THEN 'Excellent (90-100)'
-            WHEN (analysis_result->>'overall_score')::numeric >= 80 THEN 'Good (80-89)'
-            WHEN (analysis_result->>'overall_score')::numeric >= 70 THEN 'Average (70-79)'
-            WHEN (analysis_result->>'overall_score')::numeric >= 60 THEN 'Below Average (60-69)'
+        SELECT
+          CASE
+            WHEN (test_result->>'overall_score')::numeric >= 90 THEN 'Excellent (90-100)'
+            WHEN (test_result->>'overall_score')::numeric >= 80 THEN 'Good (80-89)'
+            WHEN (test_result->>'overall_score')::numeric >= 70 THEN 'Average (70-79)'
+            WHEN (test_result->>'overall_score')::numeric >= 60 THEN 'Below Average (60-69)'
             ELSE 'Poor (<60)'
           END as score_range,
           COUNT(*) as result_count,
           ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (), 2) as percentage
         FROM archive.analysis_results
         WHERE created_at BETWEEN :startDate AND :endDate
-          AND analysis_result->>'overall_score' IS NOT NULL
+          AND test_result->>'overall_score' IS NOT NULL
         GROUP BY score_range
-        ORDER BY 
+        ORDER BY
           CASE score_range
             WHEN 'Excellent (90-100)' THEN 1
             WHEN 'Good (80-89)' THEN 2

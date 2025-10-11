@@ -40,8 +40,8 @@ class TokenService {
           COUNT(*) as total_transactions,
           COUNT(CASE WHEN activity_data->>'action' = 'add' THEN 1 END) as additions,
           COUNT(CASE WHEN activity_data->>'action' = 'deduct' THEN 1 END) as deductions,
-          SUM(CASE WHEN activity_data->>'action' = 'add' THEN (activity_data->>'amount')::integer ELSE 0 END) as total_added,
-          SUM(CASE WHEN activity_data->>'action' = 'deduct' THEN (activity_data->>'amount')::integer ELSE 0 END) as total_deducted
+          COALESCE(SUM(CASE WHEN activity_data->>'action' = 'add' THEN (activity_data->>'amount')::integer ELSE 0 END), 0) as total_added,
+          COALESCE(SUM(CASE WHEN activity_data->>'action' = 'deduct' THEN (activity_data->>'amount')::integer ELSE 0 END), 0) as total_deducted
         FROM archive.user_activity_logs
         WHERE activity_type = 'token_balance_update'
           AND created_at BETWEEN :startDate AND :endDate
@@ -54,8 +54,8 @@ class TokenService {
       const consumptionStats = await sequelize.query(`
         SELECT
           COUNT(*) as total_usage_events,
-          SUM(total_tokens) as total_consumed,
-          AVG(total_tokens) as avg_per_event,
+          COALESCE(SUM(total_tokens), 0) as total_consumed,
+          COALESCE(AVG(total_tokens), 0) as avg_per_event,
           COUNT(DISTINCT c.user_id) as active_users
         FROM chat.usage_tracking ut
         JOIN chat.conversations c ON ut.conversation_id = c.id
@@ -68,8 +68,8 @@ class TokenService {
 
       // Token balance distribution
       const balanceDistribution = await sequelize.query(`
-        SELECT 
-          CASE 
+        SELECT
+          CASE
             WHEN token_balance = 0 THEN '0'
             WHEN token_balance BETWEEN 1 AND 10 THEN '1-10'
             WHEN token_balance BETWEEN 11 AND 50 THEN '11-50'
@@ -81,16 +81,24 @@ class TokenService {
           ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (), 2) as percentage
         FROM auth.users
         WHERE user_type = 'user'
-        GROUP BY balance_range
-        ORDER BY 
-          CASE balance_range
-            WHEN '0' THEN 1
-            WHEN '1-10' THEN 2
-            WHEN '11-50' THEN 3
-            WHEN '51-100' THEN 4
-            WHEN '101-500' THEN 5
-            ELSE 6
+        GROUP BY
+          CASE
+            WHEN token_balance = 0 THEN '0'
+            WHEN token_balance BETWEEN 1 AND 10 THEN '1-10'
+            WHEN token_balance BETWEEN 11 AND 50 THEN '11-50'
+            WHEN token_balance BETWEEN 51 AND 100 THEN '51-100'
+            WHEN token_balance BETWEEN 101 AND 500 THEN '101-500'
+            ELSE '500+'
           END
+        ORDER BY
+          MIN(CASE
+            WHEN token_balance = 0 THEN 1
+            WHEN token_balance BETWEEN 1 AND 10 THEN 2
+            WHEN token_balance BETWEEN 11 AND 50 THEN 3
+            WHEN token_balance BETWEEN 51 AND 100 THEN 4
+            WHEN token_balance BETWEEN 101 AND 500 THEN 5
+            ELSE 6
+          END)
       `, {
         type: sequelize.QueryTypes.SELECT
       });

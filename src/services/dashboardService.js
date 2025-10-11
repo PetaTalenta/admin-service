@@ -275,14 +275,14 @@ class DashboardService {
 
       // Assessment KPIs
       const assessmentKPIs = await sequelize.query(`
-        SELECT 
+        SELECT
           COUNT(aj.id) as total_assessments,
           COUNT(ar.id) as completed_assessments,
           ROUND(COUNT(ar.id) * 100.0 / COUNT(aj.id), 2) as completion_rate,
           AVG(EXTRACT(EPOCH FROM (aj.completed_at - aj.created_at))) as avg_processing_time,
-          AVG((ar.analysis_result->>'overall_score')::numeric) as avg_assessment_score
+          AVG((ar.test_result->>'overall_score')::numeric) as avg_assessment_score
         FROM archive.analysis_jobs aj
-        LEFT JOIN archive.analysis_results ar ON aj.id = ar.job_id
+        LEFT JOIN archive.analysis_results ar ON aj.result_id = ar.id
         WHERE aj.created_at BETWEEN :startDate AND :endDate
       `, {
         replacements: { startDate, endDate },
