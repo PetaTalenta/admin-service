@@ -1,8 +1,8 @@
-# Admin Service - Phase 1
+# Admin Service - Phase 2
 
 Admin Service for FutureGuide Backend - Comprehensive admin dashboard monitoring and management system.
 
-## Phase 1: Foundation & Authentication
+## Phase 1: Foundation & Authentication ✅
 
 ### Features Implemented
 - ✅ Service Setup with Express.js
@@ -17,6 +17,20 @@ Admin Service for FutureGuide Backend - Comprehensive admin dashboard monitoring
 - ✅ JWT Token Validation
 - ✅ Role-Based Access Control
 
+## Phase 2: User Management Module ✅
+
+### Features Implemented
+- ✅ User List & Search with Pagination
+- ✅ User Details with Statistics
+- ✅ User Profile Updates
+- ✅ Token Balance Management
+- ✅ Token History Tracking
+- ✅ User Activity Logs
+- ✅ User Jobs Listing
+- ✅ User Conversations Listing
+- ✅ Advanced Filtering (by user_type, is_active, auth_provider)
+- ✅ Comprehensive Input Validation
+
 ### API Endpoints
 
 #### Health Check
@@ -29,6 +43,15 @@ Admin Service for FutureGuide Backend - Comprehensive admin dashboard monitoring
 - `POST /admin/auth/login` - Admin login (rate limited: 10 req/15min)
 - `POST /admin/auth/logout` - Admin logout (requires authentication)
 - `GET /admin/auth/verify` - Verify admin token (requires authentication)
+
+#### User Management (Phase 2)
+- `GET /admin/users` - Get paginated list of users with search and filter
+- `GET /admin/users/:id` - Get detailed user information
+- `PUT /admin/users/:id` - Update user information
+- `GET /admin/users/:id/tokens` - Get user token history
+- `PUT /admin/users/:id/tokens` - Update user token balance
+- `GET /admin/users/:id/jobs` - Get user's analysis jobs
+- `GET /admin/users/:id/conversations` - Get user's conversations
 
 ### Environment Variables
 
@@ -134,13 +157,25 @@ Logs are written to:
 
 Log levels: error, warn, info, http, debug
 
-### Next Steps (Phase 2)
+### Testing Phase 2
 
-- User Management Module
-- User List & Search
-- User Details & Updates
-- Token Management
-- User Activity Monitoring
+Run the Phase 2 test script:
+
+```bash
+# Make sure the service is running
+npm start
+
+# In another terminal, run the test script
+node test-phase2.js
+```
+
+### Next Steps (Phase 3)
+
+- Jobs Monitoring Module
+- Job Statistics Dashboard
+- Job List & Management
+- Job Details & Results
+- Real-time Job Monitoring
 
 ### Support
 
@@ -148,7 +183,7 @@ For issues or questions, contact the FutureGuide development team.
 
 ---
 
-**Version**: 1.0.0  
-**Phase**: 1 - Foundation & Authentication  
+**Version**: 2.0.0
+**Phase**: 2 - User Management Module
 **Status**: ✅ Complete
 
