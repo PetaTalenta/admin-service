@@ -68,6 +68,38 @@ const initializeWebSocket = (server) => {
       });
     });
 
+    // Subscribe to system updates
+    socket.on('subscribe:system', () => {
+      socket.join('system-updates');
+      logger.debug('Client subscribed to system updates', {
+        socketId: socket.id
+      });
+    });
+
+    // Unsubscribe from system updates
+    socket.on('unsubscribe:system', () => {
+      socket.leave('system-updates');
+      logger.debug('Client unsubscribed from system updates', {
+        socketId: socket.id
+      });
+    });
+
+    // Subscribe to alerts
+    socket.on('subscribe:alerts', () => {
+      socket.join('alerts');
+      logger.debug('Client subscribed to alerts', {
+        socketId: socket.id
+      });
+    });
+
+    // Unsubscribe from alerts
+    socket.on('unsubscribe:alerts', () => {
+      socket.leave('alerts');
+      logger.debug('Client unsubscribed from alerts', {
+        socketId: socket.id
+      });
+    });
+
     // Request job stats
     socket.on('request:job-stats', () => {
       sendJobStats(socket);

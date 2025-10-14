@@ -5,6 +5,7 @@ const app = require('./app');
 const logger = require('./utils/logger');
 const { testConnections, closeConnections } = require('./config/database');
 const { initializeWebSocket, closeWebSocket } = require('./services/websocketService');
+const cacheService = require('./services/cacheService');
 
 const PORT = process.env.PORT || 3007;
 
@@ -14,6 +15,15 @@ const PORT = process.env.PORT || 3007;
 const initializeServices = async () => {
   try {
     logger.info('Initializing Admin Service...');
+
+    // Initialize Redis cache
+    logger.info('Initializing Redis cache...');
+    const cacheInitialized = await cacheService.initialize();
+    if (cacheInitialized) {
+      logger.info('✓ Redis cache connected');
+    } else {
+      logger.warn('✗ Redis cache connection failed - continuing without cache');
+    }
 
     // Test database connections
     logger.info('Testing database connections...');
@@ -40,9 +50,9 @@ const initializeServices = async () => {
 
     logger.info('All services initialized successfully');
   } catch (error) {
-    logger.error('Service initialization failed', { 
+    logger.error('Service initialization failed', {
       error: error.message,
-      stack: error.stack 
+      stack: error.stack
     });
     throw error;
   }
@@ -57,7 +67,7 @@ if (process.env.NODE_ENV !== 'test') {
           service: 'admin-service',
           port: PORT,
           environment: process.env.NODE_ENV || 'development',
-          phase: 'Phase 3 - Jobs Monitoring Module',
+          phase: 'Phase 5 - Real-time Features & Optimization',
           features: [
             'Health Check Endpoints',
             'Admin Authentication',
@@ -66,17 +76,22 @@ if (process.env.NODE_ENV !== 'test') {
             'Rate Limiting',
             'User Management',
             'Jobs Monitoring',
-            'Real-time WebSocket Updates'
+            'Chatbot Monitoring',
+            'Real-time WebSocket Updates',
+            'System Health Monitoring',
+            'Alert Management',
+            'Redis Caching',
+            'Response Compression'
           ]
         });
 
         // Initialize WebSocket server
         initializeWebSocket(server);
-        logger.info('WebSocket server initialized for real-time job monitoring');
+        logger.info('WebSocket server initialized for real-time monitoring');
 
         logger.info(`Health check available at: http://localhost:${PORT}/health`);
         logger.info(`Admin login available at: http://localhost:${PORT}/admin/auth/login`);
-        logger.info(`Jobs monitoring available at: http://localhost:${PORT}/admin/jobs`);
+        logger.info(`System monitoring available at: http://localhost:${PORT}/admin/system/health`);
       });
 
       // Graceful shutdown
@@ -86,6 +101,9 @@ if (process.env.NODE_ENV !== 'test') {
         try {
           // Close WebSocket server
           closeWebSocket();
+
+          // Close Redis cache
+          await cacheService.close();
 
           // Close server
           server.close(async () => {
@@ -104,9 +122,9 @@ if (process.env.NODE_ENV !== 'test') {
             process.exit(1);
           }, 30000);
         } catch (error) {
-          logger.error('Error during shutdown', { 
+          logger.error('Error during shutdown', {
             error: error.message,
-            stack: error.stack 
+            stack: error.stack
           });
           process.exit(1);
         }

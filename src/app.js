@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const compression = require('compression');
 
 // Load environment variables
 require('dotenv').config();
@@ -17,6 +18,7 @@ const userRoutes = require('./routes/users');
 const jobRoutes = require('./routes/jobs');
 const conversationRoutes = require('./routes/conversations');
 const chatbotRoutes = require('./routes/chatbot');
+const systemRoutes = require('./routes/system');
 
 // Initialize model associations
 require('./models/associations');
@@ -42,7 +44,7 @@ app.use(helmet({
 
 // CORS configuration
 const corsOptions = {
-  origin: process.env.ALLOWED_ORIGINS 
+  origin: process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',')
     : '*',
   credentials: true,
@@ -51,6 +53,17 @@ const corsOptions = {
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID']
 };
 app.use(cors(corsOptions));
+
+// Compression middleware for response optimization
+app.use(compression({
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    return compression.filter(req, res);
+  },
+  level: 6 // Compression level (0-9)
+}));
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -93,6 +106,7 @@ app.use('/admin/users', userRoutes);
 app.use('/admin/jobs', jobRoutes);
 app.use('/admin/conversations', conversationRoutes);
 app.use('/admin/chatbot', chatbotRoutes);
+app.use('/admin/system', systemRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -100,7 +114,7 @@ app.get('/', (req, res) => {
     success: true,
     message: 'FutureGuide Admin Service is running',
     version: '1.0.0',
-    phase: 'Phase 4 - Chatbot Monitoring Module',
+    phase: 'Phase 5 - Real-time Features & Optimization',
     timestamp: new Date().toISOString()
   });
 });

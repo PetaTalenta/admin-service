@@ -181,10 +181,51 @@ const schemas = {
   })
 };
 
+/**
+ * Generic validation middleware
+ * @param {Object} schema - Joi validation schema
+ * @param {string} source - Source of data to validate ('body', 'query', 'params')
+ * @returns {Function} Express middleware
+ */
+const validateRequest = (schema, source = 'body') => {
+  return (req, res, next) => {
+    const data = req[source];
+    const { error, value } = schema.validate(data, {
+      abortEarly: false,
+      stripUnknown: true
+    });
+
+    if (error) {
+      const errors = error.details.map(detail => ({
+        field: detail.path.join('.'),
+        message: detail.message
+      }));
+
+      logger.warn(`Request ${source} validation failed`, {
+        url: req.originalUrl,
+        errors
+      });
+
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: `Invalid request ${source}`,
+          details: errors
+        }
+      });
+    }
+
+    req[source] = value;
+    next();
+  };
+};
+
 module.exports = {
   validateBody,
   validateQuery,
   validateParams,
+  validateRequest,
   schemas
 };
 

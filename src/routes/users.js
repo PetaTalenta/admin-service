@@ -4,6 +4,7 @@ const router = express.Router();
 const userController = require('../controllers/userController');
 const { authenticateAdmin } = require('../middleware/auth');
 const { validateQuery, validateParams, validateBody, schemas } = require('../middleware/validation');
+const { cacheMiddleware, invalidateCacheAfter } = require('../middleware/cacheMiddleware');
 
 /**
  * All routes require admin authentication
@@ -17,6 +18,7 @@ router.use(authenticateAdmin);
 router.get(
   '/',
   validateQuery(schemas.userListQuery),
+  cacheMiddleware(60), // Cache for 60 seconds
   userController.getUsers
 );
 
@@ -27,6 +29,7 @@ router.get(
 router.get(
   '/:id',
   validateParams(schemas.uuid),
+  cacheMiddleware(120), // Cache for 2 minutes
   userController.getUserById
 );
 
@@ -38,6 +41,7 @@ router.put(
   '/:id',
   validateParams(schemas.uuid),
   validateBody(schemas.updateUser),
+  invalidateCacheAfter('admin:route:/admin/users*'), // Invalidate user cache after update
   userController.updateUser
 );
 
