@@ -10,7 +10,7 @@
 
 The Admin Service provides comprehensive monitoring and management capabilities for the FutureGuide platform. This document details all available API endpoints, request/response formats, and authentication requirements.
 
-**Base URL**: `http://admin-service:3007` (internal) or `https://api.futureguide.id/api/admin` (via API Gateway)
+**Base URL**: `http://localhost:3007` (internal) or `https://api.futureguide.id/api` and `http://localhost:3000/api` (via API Gateway)
 
 **Note**: The `api/` prefix is handled by the API gateway. The admin-service implements endpoints under `admin/`.
 
@@ -38,7 +38,7 @@ Content-Type: application/json
 
 ### Health Check Endpoints
 
-#### GET /health
+#### GET admin/health
 
 Basic health check endpoint.
 
@@ -63,7 +63,7 @@ Basic health check endpoint.
 
 ---
 
-#### GET /health/detailed
+#### GET admin/health/detailed
 
 Detailed health check including database connections.
 
@@ -132,7 +132,7 @@ Detailed health check including database connections.
 
 ---
 
-#### GET /health/ready
+#### GET admin/health/ready
 
 Readiness probe for container orchestration.
 
@@ -152,7 +152,7 @@ Readiness probe for container orchestration.
 
 ---
 
-#### GET /health/live
+#### GET admin/health/live
 
 Liveness probe for container orchestration.
 
@@ -174,7 +174,7 @@ Liveness probe for container orchestration.
 
 ### Authentication Endpoints
 
-#### POST /admin/direct/auth/login
+#### POST /admin/auth/login
 
 Admin login endpoint. Authenticates admin user and returns JWT token.
 
@@ -214,11 +214,9 @@ Admin login endpoint. Authenticates admin user and returns JWT token.
 ```json
 {
   "success": false,
-  "error": {
-    "code": "UNAUTHORIZED",
-    "message": "Invalid credentials"
-  },
-  "timestamp": "2025-10-13T10:00:00.000Z"
+  "error": "UNAUTHORIZED",
+  "message": "Username or email not found",
+  "timestamp": "2025-10-14T06:37:49.123Z"
 }
 ```
 
@@ -234,20 +232,27 @@ Admin login endpoint. Authenticates admin user and returns JWT token.
 }
 ```
 
-- **429 Too Many Requests**: Rate limit exceeded
+- **400 Bad Request**: Validation error
 ```json
 {
   "success": false,
   "error": {
-    "code": "RATE_LIMIT_EXCEEDED",
-    "message": "Too many authentication attempts, please try again later"
-  }
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid request body",
+    "details": [
+      {
+        "field": "email",
+        "message": "Email is required"
+      }
+    ]
+  },
+  "timestamp": "2025-10-14T06:37:55.123Z"
 }
 ```
 
 ---
 
-#### POST /admin/direct/auth/logout
+#### POST /admin/auth/logout
 
 Admin logout endpoint. Invalidates the current session.
 
@@ -263,9 +268,19 @@ Admin logout endpoint. Invalidates the current session.
 }
 ```
 
+**Error Response** (401):
+```json
+{
+  "success": false,
+  "error": "UNAUTHORIZED",
+  "message": "Access token is required",
+  "timestamp": "2025-10-14T06:37:53.789Z"
+}
+```
+
 ---
 
-#### GET /admin/direct/auth/verify
+#### GET /admin/auth/verify
 
 Verify admin token and return admin information.
 
@@ -285,6 +300,16 @@ Verify admin token and return admin information.
 }
 ```
 
+**Error Response** (401):
+```json
+{
+  "success": false,
+  "error": "UNAUTHORIZED",
+  "message": "Access token is required",
+  "timestamp": "2025-10-14T06:37:51.456Z"
+}
+```
+
 ---
 
 ## Error Codes
@@ -298,6 +323,16 @@ Verify admin token and return admin information.
 | `RATE_LIMIT_EXCEEDED` | 429 | Too many requests |
 | `SERVICE_UNAVAILABLE` | 503 | Service temporarily unavailable |
 | `INTERNAL_ERROR` | 500 | Internal server error |
+
+**Example Error Response**:
+```json
+{
+  "success": false,
+  "error": "NOT_FOUND",
+  "message": "Route GET /api/nonexistent-route not found",
+  "timestamp": "2025-10-14T06:38:05.678Z"
+}
+```
 
 ---
 
@@ -317,7 +352,7 @@ Rate limit information is returned in response headers:
 
 ### User List & Search
 
-#### GET /admin/direct/users
+#### GET /admin/users
 
 Get paginated list of users with search and filter capabilities.
 
@@ -370,7 +405,7 @@ Get paginated list of users with search and filter capabilities.
 
 ### User Details
 
-#### GET /admin/direct/users/:id
+#### GET /admin/users/:id
 
 Get detailed information about a specific user including profile, statistics, and recent activity.
 
@@ -434,7 +469,7 @@ Get detailed information about a specific user including profile, statistics, an
 
 ---
 
-#### PUT /admin/direct/users/:id
+#### PUT /admin/users/:id
 
 Update user information and profile data.
 
@@ -487,7 +522,7 @@ Update user information and profile data.
 
 ### Token Management
 
-#### GET /admin/direct/users/:id/tokens
+#### GET /admin/users/:id/tokens
 
 Get user's token balance and transaction history.
 
@@ -523,7 +558,7 @@ Get user's token balance and transaction history.
 
 ---
 
-#### PUT /admin/direct/users/:id/tokens
+#### PUT /admin/users/:id/tokens
 
 Update user's token balance with logging.
 
@@ -560,7 +595,7 @@ Update user's token balance with logging.
 
 ### User Activity
 
-#### GET /admin/direct/users/:id/jobs
+#### GET /admin/users/:id/jobs
 
 Get user's analysis jobs with pagination.
 
@@ -601,7 +636,7 @@ Get user's analysis jobs with pagination.
 
 ---
 
-#### GET /admin/direct/users/:id/conversations
+#### GET /admin/users/:id/conversations
 
 Get user's chat conversations with pagination.
 
@@ -644,7 +679,7 @@ Get user's chat conversations with pagination.
 
 ### Job Monitoring Endpoints
 
-#### GET /admin/direct/jobs/analytics
+#### GET /admin/jobs/stats
 
 Get comprehensive job statistics dashboard.
 
@@ -656,33 +691,59 @@ Get comprehensive job statistics dashboard.
 ```json
 {
   "success": true,
-  "message": "Job analytics retrieved successfully",
+  "message": "Job statistics retrieved successfully",
   "data": {
-    "totalJobs": "609",
-    "successfulJobs": "437",
-    "successRate": "71.76",
-    "avgProcessingTime": "1520.3384128289473684",
+    "overview": {
+      "total": 1250,
+      "queued": 45,
+      "processing": 12,
+      "completed": 1150,
+      "failed": 38,
+      "cancelled": 5,
+      "successRate": 96.79
+    },
+    "today": {
+      "total": 87,
+      "completed": 82,
+      "failed": 5
+    },
+    "performance": {
+      "avgProcessingTimeSeconds": 245,
+      "avgProcessingTimeMinutes": "4.08"
+    },
     "dailyMetrics": [
       {
-        "period": "2025-10-08T21:00:00.000Z",
-        "total_jobs": "1",
-        "successful_jobs": "1",
-        "success_rate": "100.00"
+        "date": "2025-10-07",
+        "total": 120,
+        "completed": 115,
+        "failed": 5
+      },
+      {
+        "date": "2025-10-08",
+        "total": 135,
+        "completed": 130,
+        "failed": 5
       }
     ],
-    "topUsers": [
-      {
-        "id": "f843ce6b-0f41-4e3a-9c53-055ba85e4c61",
-        "email": "kasykoi@gmail.com",
-        "username": "rayinail updated",
-        "job_count": "18",
-        "completed_jobs": "18",
-        "failed_jobs": "0",
-        "success_rate": "100.00"
+    "resourceUtilization": {
+      "cpu_usage": {
+        "value": 45.5,
+        "data": {},
+        "recorded_at": "2025-10-13T10:00:00.000Z"
+      },
+      "memory_usage": {
+        "value": 62.3,
+        "data": {},
+        "recorded_at": "2025-10-13T10:00:00.000Z"
+      },
+      "queue_size": {
+        "value": 45,
+        "data": {},
+        "recorded_at": "2025-10-13T10:00:00.000Z"
       }
-    ]
+    }
   },
-  "timestamp": "2025-10-14T03:52:31.434Z"
+  "timestamp": "2025-10-13T10:00:00.000Z"
 }
 ```
 
@@ -690,7 +751,7 @@ Get comprehensive job statistics dashboard.
 
 ---
 
-#### GET /admin/direct/jobs
+#### GET /admin/jobs
 
 Get paginated list of jobs with filtering and sorting.
 
@@ -709,7 +770,7 @@ Get paginated list of jobs with filtering and sorting.
 
 **Example Request**:
 ```
-GET /admin/direct/jobs?page=1&limit=20&status=completed&sort_by=completed_at&sort_order=DESC
+GET /admin/jobs?page=1&limit=20&status=completed&sort_by=completed_at&sort_order=DESC
 ```
 
 **Response**:
@@ -756,7 +817,7 @@ GET /admin/direct/jobs?page=1&limit=20&status=completed&sort_by=completed_at&sor
 
 ---
 
-#### GET /admin/direct/jobs/:id
+#### GET /admin/jobs/:id
 
 Get detailed information about a specific job.
 
@@ -803,7 +864,7 @@ Get detailed information about a specific job.
 
 ---
 
-#### GET /admin/direct/jobs/:id/results
+#### GET /admin/jobs/:id/results
 
 Get complete analysis results for a specific job.
 
@@ -1045,7 +1106,7 @@ Get comprehensive chatbot performance metrics and analytics.
 
 ### Conversation Management
 
-#### GET /admin/direct/conversations
+#### GET /admin/conversations
 
 Get paginated list of conversations with filtering and sorting.
 
@@ -1102,7 +1163,7 @@ Get paginated list of conversations with filtering and sorting.
 
 ---
 
-#### GET /admin/direct/conversations/:id
+#### GET /admin/conversations/:id
 
 Get detailed information about a specific conversation.
 
@@ -1145,7 +1206,7 @@ Get detailed information about a specific conversation.
 
 ---
 
-#### GET /admin/direct/conversations/:id/chats
+#### GET /admin/conversations/:id/chats
 
 Get paginated chat message history for a conversation.
 
@@ -1225,7 +1286,7 @@ Get paginated chat message history for a conversation.
 
 ### Model Analytics
 
-#### GET /admin/direct/chatbot/models
+#### GET /admin/chatbot/models
 
 Get information about available AI models and their usage statistics.
 
@@ -1443,7 +1504,7 @@ Get comprehensive system metrics.
 
 ---
 
-#### GET /admin/direct/system/database/stats
+#### GET /admin/system/database
 
 Get database health for all schemas.
 
