@@ -5,7 +5,7 @@
 
 const axios = require('axios');
 
-const BASE_URL = process.env.ADMIN_SERVICE_URL || 'http://localhost:3007';
+const BASE_URL = process.env.ADMIN_SERVICE_URL || 'http://localhost:3000/api';
 const colors = {
   reset: '\x1b[0m',
   green: '\x1b[32m',
@@ -43,35 +43,35 @@ async function testHealthEndpoints() {
 
   // Test basic health
   try {
-    const response = await axios.get(`${BASE_URL}/health`);
-    logTest('GET /health', response.status === 200 && response.data.success);
+    const response = await axios.get(`${BASE_URL}/admin/health`);
+    logTest('GET /admin/health', response.status === 200 && response.data.success);
   } catch (error) {
-    logTest('GET /health', false, error.message);
+    logTest('GET /admin/health', false, error.message);
   }
 
   // Test detailed health
   try {
-    const response = await axios.get(`${BASE_URL}/health/detailed`);
+    const response = await axios.get(`${BASE_URL}/admin/health/detailed`);
     const hasDbHealth = response.data.data.database !== undefined;
-    logTest('GET /health/detailed', response.status === 200 && hasDbHealth);
+    logTest('GET /admin/health/detailed', response.status === 200 && hasDbHealth);
   } catch (error) {
-    logTest('GET /health/detailed', false, error.message);
+    logTest('GET /admin/health/detailed', false, error.message);
   }
 
   // Test readiness probe
   try {
-    const response = await axios.get(`${BASE_URL}/health/ready`);
-    logTest('GET /health/ready', response.status === 200);
+    const response = await axios.get(`${BASE_URL}/admin/health/ready`);
+    logTest('GET /admin/health/ready', response.status === 200);
   } catch (error) {
-    logTest('GET /health/ready', false, error.message);
+    logTest('GET /admin/health/ready', false, error.message);
   }
 
   // Test liveness probe
   try {
-    const response = await axios.get(`${BASE_URL}/health/live`);
-    logTest('GET /health/live', response.status === 200);
+    const response = await axios.get(`${BASE_URL}/admin/health/live`);
+    logTest('GET /admin/health/live', response.status === 200);
   } catch (error) {
-    logTest('GET /health/live', false, error.message);
+    logTest('GET /admin/health/live', false, error.message);
   }
 }
 

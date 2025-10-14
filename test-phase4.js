@@ -5,7 +5,7 @@
 
 const axios = require('axios');
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3107';
+const BASE_URL = process.env.BASE_URL || 'http://localhost:3000/api';
 const TEST_EMAIL = process.env.TEST_EMAIL || 'admin@futureguide.id';
 const TEST_PASSWORD = process.env.TEST_PASSWORD || 'admin123';
 

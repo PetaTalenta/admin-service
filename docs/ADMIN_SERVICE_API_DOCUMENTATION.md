@@ -85,17 +85,17 @@ Detailed health check including database connections.
       "auth": {
         "status": "healthy",
         "pool": {
-          "size": 5,
-          "available": 4,
-          "using": 1,
+          "size": 1,
+          "available": 1,
+          "using": 0,
           "waiting": 0
         }
       },
       "assessment": {
         "status": "healthy",
         "pool": {
-          "size": 5,
-          "available": 5,
+          "size": 1,
+          "available": 1,
           "using": 0,
           "waiting": 0
         }
@@ -103,17 +103,17 @@ Detailed health check including database connections.
       "archive": {
         "status": "healthy",
         "pool": {
-          "size": 5,
-          "available": 4,
-          "using": 1,
+          "size": 1,
+          "available": 1,
+          "using": 0,
           "waiting": 0
         }
       },
       "chat": {
         "status": "healthy",
         "pool": {
-          "size": 5,
-          "available": 5,
+          "size": 1,
+          "available": 1,
           "using": 0,
           "waiting": 0
         }
@@ -232,6 +232,17 @@ Admin login endpoint. Authenticates admin user and returns JWT token.
 }
 ```
 
+- **429 Too Many Requests**: Rate limit exceeded
+```json
+{
+  "success": false,
+  "error": {
+    "code": "RATE_LIMIT_EXCEEDED",
+    "message": "Too many authentication attempts, please try again later"
+  }
+}
+```
+
 - **400 Bad Request**: Validation error
 ```json
 {
@@ -273,8 +284,7 @@ Admin logout endpoint. Invalidates the current session.
 {
   "success": false,
   "error": "UNAUTHORIZED",
-  "message": "Access token is required",
-  "timestamp": "2025-10-14T06:37:53.789Z"
+  "message": "Access token is required"
 }
 ```
 
@@ -305,8 +315,7 @@ Verify admin token and return admin information.
 {
   "success": false,
   "error": "UNAUTHORIZED",
-  "message": "Access token is required",
-  "timestamp": "2025-10-14T06:37:51.456Z"
+  "message": "Access token is required"
 }
 ```
 
@@ -427,41 +436,28 @@ Get detailed information about a specific user including profile, statistics, an
       "email": "john@example.com",
       "user_type": "user",
       "is_active": true,
-      "auth_provider": "local",
       "token_balance": 100,
       "last_login": "2025-10-10T08:30:00.000Z",
+      "firebase_uid": "j4LtzZhK8ud2EKWH2dRrbMB7wh82",
+      "auth_provider": "firebase",
+      "provider_data": {
+        "disabled": false,
+        "provider_id": "password",
+        "email_verified": false,
+        "last_sign_in_time": "Mon, 13 Oct 2025 04:34:34 GMT"
+      },
+      "last_firebase_sync": "2025-10-13T04:55:34.778Z",
+      "federation_status": "active",
       "created_at": "2025-01-15T10:00:00.000Z",
-      "federation_status": "active"
-    },
-    "profile": {
-      "full_name": "John Doe",
-      "date_of_birth": "1990-05-15",
-      "gender": "male",
-      "school_id": 123
+      "updated_at": "2025-10-14T06:08:51.612Z",
+      "profile": null
     },
     "statistics": {
-      "jobs_count": {
-        "total": 25,
-        "completed": 20,
-        "failed": 3,
-        "processing": 2
-      },
-      "conversations_count": 15
+      "jobs": [],
+      "conversations": 0
     },
-    "recent_jobs": [
-      {
-        "id": "job-123",
-        "status": "completed",
-        "created_at": "2025-10-12T14:30:00.000Z"
-      }
-    ],
-    "recent_conversations": [
-      {
-        "id": "conv-456",
-        "title": "Career Advice",
-        "created_at": "2025-10-11T16:45:00.000Z"
-      }
-    ]
+    "recentJobs": [],
+    "recentConversations": []
   },
   "timestamp": "2025-10-14T10:00:00.000Z"
 }
@@ -536,19 +532,24 @@ Get user's token balance and transaction history.
 ```json
 {
   "success": true,
-  "message": "Token information retrieved successfully",
+  "message": "Token history retrieved successfully",
   "data": {
-    "current_balance": 100,
-    "transactions": [
+    "currentBalance": 100,
+    "history": [
       {
-        "id": "txn-123",
-        "activity_type": "token_added",
+        "id": "460cc73f-888d-424f-bfe6-2b32b87eb1c2",
+        "user_id": "550e8400-e29b-41d4-a716-446655440000",
+        "admin_id": "00000000-0000-0000-0000-000000000001",
+        "activity_type": "TOKEN_UPDATE",
         "activity_data": {
           "amount": 50,
-          "reason": "Purchase"
+          "reason": "Bonus for completing assessment",
+          "newBalance": 150,
+          "oldBalance": 100
         },
-        "created_at": "2025-10-10T08:30:00.000Z",
-        "admin_id": "admin-456"
+        "ip_address": "::ffff:172.21.0.11",
+        "user_agent": "axios/1.12.2",
+        "created_at": "2025-10-14T06:50:41.026Z"
       }
     ]
   },
@@ -582,10 +583,11 @@ Update user's token balance with logging.
   "success": true,
   "message": "Token balance updated successfully",
   "data": {
-    "previous_balance": 100,
-    "new_balance": 125,
-    "change": 25,
-    "reason": "Bonus for completing assessment"
+    "userId": "550e8400-e29b-41d4-a716-446655440000",
+    "email": "john@example.com",
+    "oldBalance": 100,
+    "newBalance": 125,
+    "amount": 25
   },
   "timestamp": "2025-10-14T10:00:00.000Z"
 }
@@ -694,53 +696,13 @@ Get comprehensive job statistics dashboard.
   "message": "Job statistics retrieved successfully",
   "data": {
     "overview": {
-      "total": 1250,
-      "queued": 45,
-      "processing": 12,
-      "completed": 1150,
-      "failed": 38,
-      "cancelled": 5,
-      "successRate": 96.79
-    },
-    "today": {
-      "total": 87,
-      "completed": 82,
-      "failed": 5
-    },
-    "performance": {
-      "avgProcessingTimeSeconds": 245,
-      "avgProcessingTimeMinutes": "4.08"
-    },
-    "dailyMetrics": [
-      {
-        "date": "2025-10-07",
-        "total": 120,
-        "completed": 115,
-        "failed": 5
-      },
-      {
-        "date": "2025-10-08",
-        "total": 135,
-        "completed": 130,
-        "failed": 5
-      }
-    ],
-    "resourceUtilization": {
-      "cpu_usage": {
-        "value": 45.5,
-        "data": {},
-        "recorded_at": "2025-10-13T10:00:00.000Z"
-      },
-      "memory_usage": {
-        "value": 62.3,
-        "data": {},
-        "recorded_at": "2025-10-13T10:00:00.000Z"
-      },
-      "queue_size": {
-        "value": 45,
-        "data": {},
-        "recorded_at": "2025-10-13T10:00:00.000Z"
-      }
+      "total": 1068,
+      "queued": 0,
+      "processing": 0,
+      "completed": 1056,
+      "failed": 11,
+      "successRate": 98.97,
+      "avgProcessingTimeMinutes": "0.00"
     }
   },
   "timestamp": "2025-10-13T10:00:00.000Z"
@@ -1063,40 +1025,26 @@ Get comprehensive chatbot performance metrics and analytics.
       "conversations": 0,
       "messages": 0
     },
+    "performance": {
+      "avgResponseTimeMs": 6757.66
+    },
+    "tokenUsage": {
+      "totalTokens": 303933
+    },
     "modelUsage": [
       {
         "model": "meta-llama/llama-3.2-3b-instruct:free",
         "count": 96,
-        "totalTokens": 189490,
-        "avgProcessingTime": 4047.07
-      }
-    ],
-    "performance": {
-      "avgResponseTimeMs": 6757.66,
-      "avgResponseTimeSeconds": "6.76"
-    },
-    "tokenUsage": {
-      "totalPromptTokens": 150000,
-      "totalCompletionTokens": 153933,
-      "totalTokens": 303933,
-      "totalCost": 0
-    },
-    "statusBreakdown": {
-      "active": 132
-    },
-    "dailyMetrics": [
+        "totalTokens": 189490
+      },
       {
-        "date": "2025-10-13",
-        "conversations": 132
-      }
-    ],
-    "dailyMessages": [
-      {
-        "date": "2025-10-13",
-        "messages": 288
+        "model": "openai/gpt-oss-20b:free",
+        "count": 2,
+        "totalTokens": 4109
       }
     ]
-  }
+  },
+  "timestamp": "2025-10-14T07:23:39.000Z"
 }
 ```
 
@@ -1133,29 +1081,20 @@ Get paginated list of conversations with filtering and sorting.
     "conversations": [
       {
         "id": "ba94a361-110b-4f44-8de7-33027d321118",
-        "user_id": "user-uuid",
         "title": "Test Conversation",
-        "context_type": "career_guidance",
-        "context_data": {},
         "status": "active",
-        "metadata": {},
-        "created_at": "2025-10-13T02:09:21.775Z",
-        "updated_at": "2025-10-13T02:09:21.775Z",
-        "user": {
-          "id": "user-uuid",
-          "email": "test@example.com",
-          "username": "testuser"
-        },
-        "messageCount": 8
+        "messageCount": 8,
+        "created_at": "2025-10-13T02:09:21.775Z"
       }
     ],
     "pagination": {
       "total": 132,
       "page": 1,
-      "limit": 20,
-      "totalPages": 7
+      "limit": 10,
+      "totalPages": 14
     }
-  }
+  },
+  "timestamp": "2025-10-14T07:23:39.000Z"
 }
 ```
 
@@ -1179,23 +1118,18 @@ Get detailed information about a specific conversation.
   "message": "Conversation details retrieved successfully",
   "data": {
     "id": "ba94a361-110b-4f44-8de7-33027d321118",
-    "user_id": "user-uuid",
     "title": "Test Conversation",
-    "context_type": "career_guidance",
-    "context_data": {},
     "status": "active",
-    "metadata": {},
-    "created_at": "2025-10-13T02:09:21.775Z",
-    "updated_at": "2025-10-13T02:09:21.775Z",
-    "user": {
-      "id": "user-uuid",
-      "email": "test@example.com",
-      "username": "testuser"
-    },
+    "context_type": "career_guidance",
     "messageCount": 8,
     "totalTokens": 9333,
-    "totalCost": 0
-  }
+    "totalCost": 0,
+    "created_at": "2025-10-13T02:09:21.775Z",
+    "user": {
+      "email": "test_user_1760321309064@example.com"
+    }
+  },
+  "timestamp": "2025-10-14T07:23:39.000Z"
 }
 ```
 
@@ -1226,54 +1160,31 @@ Get paginated chat message history for a conversation.
   "message": "Conversation chats retrieved successfully",
   "data": {
     "conversation": {
-      "id": "ba94a361-110b-4f44-8de7-33027d321118",
-      "title": "Test Conversation",
-      "status": "active",
-      "context_type": "career_guidance"
+      "title": "Test Conversation"
     },
     "messages": [
       {
-        "id": "message-uuid",
-        "conversation_id": "ba94a361-110b-4f44-8de7-33027d321118",
         "sender_type": "user",
         "content": "Halo! Berdasarkan profile persona saya...",
-        "content_type": "text",
-        "metadata": {},
-        "parent_message_id": null,
-        "created_at": "2025-10-13T02:09:22.000Z",
         "usage": null
       },
       {
-        "id": "message-uuid-2",
-        "conversation_id": "ba94a361-110b-4f44-8de7-33027d321118",
         "sender_type": "assistant",
         "content": "Halo Test User! Aku Guider...",
-        "content_type": "text",
-        "metadata": {},
-        "parent_message_id": "message-uuid",
-        "created_at": "2025-10-13T02:09:25.000Z",
         "usage": {
-          "id": "usage-uuid",
-          "conversation_id": "ba94a361-110b-4f44-8de7-33027d321118",
-          "message_id": "message-uuid-2",
           "model_used": "alibaba/tongyi-deepresearch-30b-a3b:free",
-          "prompt_tokens": 500,
-          "completion_tokens": 633,
-          "total_tokens": 1133,
-          "cost_credits": "0",
-          "is_free_model": true,
-          "processing_time_ms": 5897,
-          "created_at": "2025-10-13T02:09:25.000Z"
+          "total_tokens": 1133
         }
       }
     ],
     "pagination": {
       "total": 8,
       "page": 1,
-      "limit": 50,
+      "limit": 20,
       "totalPages": 1
     }
-  }
+  },
+  "timestamp": "2025-10-14T07:23:39.000Z"
 }
 ```
 
@@ -1300,32 +1211,31 @@ Get information about available AI models and their usage statistics.
   "success": true,
   "message": "Models information retrieved successfully",
   "data": {
+    "summary": {
+      "totalModels": 5,
+      "totalUsage": 131,
+      "freeModelUsage": 131,
+      "freeModelPercentage": "100.00%",
+      "paidModelUsage": 0
+    },
     "models": [
       {
         "model": "meta-llama/llama-3.2-3b-instruct:free",
         "usageCount": 96,
         "totalTokens": 189490,
         "avgProcessingTimeMs": 4047.07,
-        "isFreeModel": true,
-        "lastUsed": "2025-10-13T10:30:00.000Z"
+        "isFreeModel": true
       },
       {
         "model": "alibaba/tongyi-deepresearch-30b-a3b:free",
         "usageCount": 15,
         "totalTokens": 47448,
         "avgProcessingTimeMs": 5897.07,
-        "isFreeModel": true,
-        "lastUsed": "2025-10-13T09:15:00.000Z"
+        "isFreeModel": true
       }
-    ],
-    "summary": {
-      "totalModels": 5,
-      "totalUsage": 131,
-      "freeModelUsage": 131,
-      "paidModelUsage": 0,
-      "freeModelPercentage": "100.00"
-    }
-  }
+    ]
+  },
+  "timestamp": "2025-10-14T07:23:39.000Z"
 }
 ```
 
@@ -1423,20 +1333,20 @@ Get comprehensive system health status.
     },
     "resources": {
       "cpu": {
-        "cores": 8,
-        "model": "Intel Core i7",
-        "loadAverage": [1.5, 1.3, 1.2]
+        "cores": 4,
+        "model": "Intel(R) Core(TM) i7-7500U CPU @ 2.70GHz",
+        "loadAverage": [2.9, 2.55, 2.06]
       },
       "memory": {
-        "total": "16.00 GB",
-        "used": "13.63 GB",
-        "free": "2.37 GB",
-        "usagePercent": "85.21"
+        "total": "7.64 GB",
+        "used": "6.53 GB",
+        "free": "1.11 GB",
+        "usagePercent": "85.45"
       },
       "process": {
-        "memory": "150.23 MB",
-        "pid": 12345,
-        "uptime": 3600
+        "memory": "25.12 MB",
+        "pid": 1,
+        "uptime": 342.162503678
       }
     },
     "version": "1.0.0"
@@ -1466,31 +1376,44 @@ Get comprehensive system metrics.
   "data": {
     "timestamp": "2025-10-14T09:28:05.123Z",
     "jobs": {
-      "total_jobs": "6",
-      "completed_jobs": "4",
-      "failed_jobs": "1",
+      "total_jobs": "0",
+      "completed_jobs": "0",
+      "failed_jobs": "0",
       "processing_jobs": "0",
-      "queued_jobs": "1",
-      "avg_processing_time": 45.5
+      "queued_jobs": "0",
+      "avg_processing_time": null
     },
     "users": {
       "total_users": "324",
-      "active_users": "310",
-      "new_users_today": "5",
-      "active_today": "120",
-      "total_tokens": "15000"
+      "active_users": "324",
+      "new_users_today": "0",
+      "active_today": "4",
+      "total_tokens": "100002947"
     },
     "chat": {
       "total_conversations": "132",
-      "conversations_today": "15",
-      "total_messages": "450",
-      "messages_today": "50",
-      "total_tokens_used": "25000"
+      "conversations_today": "0",
+      "total_messages": "288",
+      "messages_today": "0",
+      "total_tokens_used": "303933"
     },
     "system": {
-      "cpu": { ... },
-      "memory": { ... },
-      "process": { ... }
+      "cpu": {
+        "cores": 4,
+        "model": "Intel(R) Core(TM) i7-7500U CPU @ 2.70GHz",
+        "loadAverage": [2.62, 2.46, 2.02]
+      },
+      "memory": {
+        "total": "7.64 GB",
+        "used": "6.58 GB",
+        "free": "1.06 GB",
+        "usagePercent": "86.10"
+      },
+      "process": {
+        "memory": "23.93 MB",
+        "pid": 1,
+        "uptime": 318.111743558
+      }
     }
   },
   "timestamp": "2025-10-14T09:28:05.123Z"
@@ -1518,15 +1441,15 @@ Get database health for all schemas.
   "data": {
     "auth": {
       "status": "healthy",
-      "responseTime": "1ms"
+      "responseTime": "2ms"
     },
     "archive": {
       "status": "healthy",
-      "responseTime": "1ms"
+      "responseTime": "2ms"
     },
     "chat": {
       "status": "healthy",
-      "responseTime": "0ms"
+      "responseTime": "2ms"
     }
   },
   "timestamp": "2025-10-14T09:28:05.123Z"
@@ -1602,28 +1525,13 @@ Get list of alerts with filtering and pagination.
   "message": "Alerts retrieved successfully",
   "data": {
     "alerts": [
-      {
-        "id": "alert_1697234567890_abc123",
-        "type": "system",
-        "severity": "warning",
-        "title": "High Memory Usage",
-        "message": "System memory usage is above 85%",
-        "data": {
-          "memoryUsage": "85.21%"
-        },
-        "status": "active",
-        "createdAt": "2025-10-14T09:28:05.123Z",
-        "acknowledgedAt": null,
-        "acknowledgedBy": null,
-        "resolvedAt": null,
-        "resolvedBy": null
-      }
+      // Array can be empty if no alerts exist
     ],
     "pagination": {
       "page": 1,
       "limit": 50,
-      "total": 1,
-      "totalPages": 1
+      "total": 0,
+      "totalPages": 0
     }
   },
   "timestamp": "2025-10-14T09:28:05.123Z"
@@ -1650,23 +1558,23 @@ Get alert statistics.
   "success": true,
   "message": "Alert statistics retrieved successfully",
   "data": {
-    "total": 10,
-    "active": 3,
-    "acknowledged": 2,
-    "resolved": 5,
+    "total": 0,
+    "active": 0,
+    "acknowledged": 0,
+    "resolved": 0,
     "bySeverity": {
-      "info": 4,
-      "warning": 3,
-      "error": 2,
-      "critical": 1
+      "info": 0,
+      "warning": 0,
+      "error": 0,
+      "critical": 0
     },
     "byType": {
-      "system": 3,
-      "job": 2,
-      "user": 1,
-      "chat": 1,
-      "performance": 2,
-      "security": 1
+      "system": 0,
+      "job": 0,
+      "user": 0,
+      "chat": 0,
+      "performance": 0,
+      "security": 0
     }
   },
   "timestamp": "2025-10-14T09:28:05.123Z"

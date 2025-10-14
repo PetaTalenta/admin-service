@@ -1,7 +1,22 @@
 /**
- * Phase 6 Testing: Docker Integration & Production Readiness
- * 
- * This test suite validates:
+ * Phase 6 Testing: Docker Integration & Production Reasync function authenticate() {
+  try {
+    log('\n=== Authentication ===', 'blue');
+    const response = await axios.post(`${BASE_URL}/admin/auth/login`, ADMIN_CREDENTIALS);
+    
+    if (response.data.success && response.data.data && response.data.data.token) {
+      adminToken = response.data.data.token;
+      logTest('Admin Authentication', 'PASS', `Token obtained`);
+      return true;
+    } else {
+      logTest('Admin Authentication', 'FAIL', 'No token in response');
+      return false;
+    }
+  } catch (error) {
+    logTest('Admin Authentication', 'FAIL', error.message);
+    return false;
+  }
+}s test suite validates:
  * 1. End-to-end system integration
  * 2. Docker container health and performance
  * 3. API gateway integration
@@ -18,8 +33,8 @@ const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:3001'
 
 // Test credentials
 const ADMIN_CREDENTIALS = {
-  email: 'admin@futureguide.com',
-  password: 'Admin123!@#'
+  email: 'admin@futureguide.id',
+  password: 'admin123'
 };
 
 let adminToken = null;

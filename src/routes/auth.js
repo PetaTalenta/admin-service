@@ -10,7 +10,7 @@ const { authLimiter } = require('../middleware/rateLimiter');
  * Admin login endpoint
  * Authenticates admin user and returns JWT token
  */
-router.post('/login', 
+router.post('/login',
   authLimiter,
   validateBody(schemas.login),
   authController.login

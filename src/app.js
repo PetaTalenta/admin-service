@@ -101,6 +101,7 @@ app.use((req, res, next) => {
 
 // Routes
 app.use('/health', healthRoutes);
+app.use('/admin/health', healthRoutes);
 app.use('/admin/auth', authRoutes);
 app.use('/admin/users', userRoutes);
 app.use('/admin/jobs', jobRoutes);

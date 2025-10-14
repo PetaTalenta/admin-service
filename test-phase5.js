@@ -13,7 +13,7 @@
 const axios = require('axios');
 const io = require('socket.io-client');
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3107';
+const BASE_URL = process.env.BASE_URL || 'http://localhost:3000/api';
 let ADMIN_TOKEN = 'test-admin-token'; // Will be replaced after login
 
 // Test results tracking
