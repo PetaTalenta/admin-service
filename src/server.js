@@ -4,6 +4,7 @@ require('dotenv').config();
 const app = require('./app');
 const logger = require('./utils/logger');
 const { testConnections, closeConnections } = require('./config/database');
+const { initializeWebSocket, closeWebSocket } = require('./services/websocketService');
 
 const PORT = process.env.PORT || 3007;
 
@@ -56,18 +57,26 @@ if (process.env.NODE_ENV !== 'test') {
           service: 'admin-service',
           port: PORT,
           environment: process.env.NODE_ENV || 'development',
-          phase: 'Phase 1 - Foundation & Authentication',
+          phase: 'Phase 3 - Jobs Monitoring Module',
           features: [
             'Health Check Endpoints',
             'Admin Authentication',
             'Multi-Schema Database Access',
             'Security Middleware',
-            'Rate Limiting'
+            'Rate Limiting',
+            'User Management',
+            'Jobs Monitoring',
+            'Real-time WebSocket Updates'
           ]
         });
 
+        // Initialize WebSocket server
+        initializeWebSocket(server);
+        logger.info('WebSocket server initialized for real-time job monitoring');
+
         logger.info(`Health check available at: http://localhost:${PORT}/health`);
         logger.info(`Admin login available at: http://localhost:${PORT}/admin/auth/login`);
+        logger.info(`Jobs monitoring available at: http://localhost:${PORT}/admin/jobs`);
       });
 
       // Graceful shutdown
@@ -75,6 +84,9 @@ if (process.env.NODE_ENV !== 'test') {
         logger.info(`${signal} received, shutting down gracefully`);
 
         try {
+          // Close WebSocket server
+          closeWebSocket();
+
           // Close server
           server.close(async () => {
             logger.info('HTTP server closed');

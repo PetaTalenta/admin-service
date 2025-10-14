@@ -14,6 +14,12 @@ const { adminLimiter } = require('./middleware/rateLimiter');
 const healthRoutes = require('./routes/health');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
+const jobRoutes = require('./routes/jobs');
+const conversationRoutes = require('./routes/conversations');
+const chatbotRoutes = require('./routes/chatbot');
+
+// Initialize model associations
+require('./models/associations');
 
 const app = express();
 
@@ -84,6 +90,9 @@ app.use((req, res, next) => {
 app.use('/health', healthRoutes);
 app.use('/admin/auth', authRoutes);
 app.use('/admin/users', userRoutes);
+app.use('/admin/jobs', jobRoutes);
+app.use('/admin/conversations', conversationRoutes);
+app.use('/admin/chatbot', chatbotRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -91,7 +100,7 @@ app.get('/', (req, res) => {
     success: true,
     message: 'FutureGuide Admin Service is running',
     version: '1.0.0',
-    phase: 'Phase 2 - User Management Module',
+    phase: 'Phase 4 - Chatbot Monitoring Module',
     timestamp: new Date().toISOString()
   });
 });

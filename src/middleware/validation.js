@@ -151,6 +151,33 @@ const schemas = {
   paginationQuery: Joi.object({
     page: Joi.number().integer().min(1).default(1),
     limit: Joi.number().integer().min(1).max(100).default(20)
+  }),
+  jobListQuery: Joi.object({
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(50),
+    status: Joi.string().valid('queue', 'processing', 'completed', 'failed', 'cancelled').optional(),
+    user_id: Joi.string().uuid().optional(),
+    assessment_name: Joi.string().optional(),
+    date_from: Joi.date().iso().optional(),
+    date_to: Joi.date().iso().optional(),
+    sort_by: Joi.string().valid('created_at', 'updated_at', 'completed_at', 'status', 'priority').default('created_at'),
+    sort_order: Joi.string().valid('ASC', 'DESC', 'asc', 'desc').default('DESC')
+  }),
+  conversationListQuery: Joi.object({
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(20),
+    status: Joi.string().valid('active', 'archived', 'deleted').optional(),
+    user_id: Joi.string().uuid().optional(),
+    context_type: Joi.string().optional(),
+    search: Joi.string().allow('').optional(),
+    date_from: Joi.date().iso().optional(),
+    date_to: Joi.date().iso().optional(),
+    sort_by: Joi.string().valid('created_at', 'updated_at', 'title', 'status').default('created_at'),
+    sort_order: Joi.string().valid('ASC', 'DESC', 'asc', 'desc').default('DESC')
+  }),
+  chatPaginationQuery: Joi.object({
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(50)
   })
 };
 
