@@ -278,20 +278,29 @@ const getJobById = async (jobId) => {
  */
 const getJobResults = async (jobId) => {
   try {
-    const job = await AnalysisJob.findByPk(jobId);
+    const job = await AnalysisJob.findOne({ where: { job_id: jobId } });
 
     if (!job) {
-      throw new Error('Job not found');
+      const error = new Error('Job not found');
+      error.statusCode = 404;
+      error.code = 'NOT_FOUND';
+      throw error;
     }
 
     if (!job.result_id) {
-      throw new Error('Job has no results yet');
+      const error = new Error('Job has no results yet');
+      error.statusCode = 404;
+      error.code = 'NOT_FOUND';
+      throw error;
     }
 
     const result = await AnalysisResult.findByPk(job.result_id);
 
     if (!result) {
-      throw new Error('Result not found');
+      const error = new Error('Result not found');
+      error.statusCode = 404;
+      error.code = 'NOT_FOUND';
+      throw error;
     }
 
     return {

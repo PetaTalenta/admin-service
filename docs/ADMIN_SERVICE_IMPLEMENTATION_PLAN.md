@@ -1,3 +1,54 @@
+# Laporan Perbaikan Bug: raw_responses Tidak Muncul di GET /admin/jobs/:id/results
+
+## Tanggal Perbaikan
+16 Oktober 2025
+
+## Status
+✅ **RESOLVED** - Bug telah diperbaiki dan diverifikasi
+
+## Ringkasan Masalah
+Endpoint GET /admin/jobs/:id/results tidak menampilkan field `raw_responses` dalam response meskipun data tersimpan di database.
+
+## Root Cause
+Query di `admin-service/src/services/jobService.js` function `getJobResults()` menggunakan `findByPk(jobId)` yang mencari berdasarkan primary key `id`, padahal parameter `:id` adalah `job_id` (field terpisah).
+
+## Perbaikan yang Diterapkan
+- **File**: `admin-service/src/services/jobService.js`
+- **Function**: `getJobResults()`
+- **Perubahan**: 
+  ```javascript
+// Sebelum (salah):
+  const job = await AnalysisJob.findByPk(jobId);
+  
+  // Sesudah (benar):
+  const job = await AnalysisJob.findOne({ where: { job_id: jobId } });
+```
+
+## Verifikasi Testing
+- **Endpoint Tested**: `GET /api/admin/jobs/{job_id}/results`
+- **Job ID Sample**: `28b77c85-d7cf-40ce-9f86-aa774f4fcc8e`
+- **Hasil**: 
+  - ✅ Response berhasil (HTTP 200)
+  - ✅ Field `raw_responses` muncul
+  - ✅ Struktur data lengkap: `ocean`, `viaIs`, `riasec`
+  - ✅ Data sample valid
+
+## Dampak Perbaikan
+- Endpoint admin dapat mengambil hasil job dengan benar menggunakan `job_id`
+- Data `raw_responses` sekarang dapat diakses via API
+- Testing dan debugging menjadi lebih mudah
+
+## Dokumentasi Terkait
+- Analisis awal: `docs/ANALISIS_RAW_RESPONSES_BUG.md`
+- Contoh struktur data: `docs/raw_responses_example.md`
+
+## Next Steps
+- Monitor penggunaan endpoint untuk memastikan stabilitas
+- Update dokumentasi API jika diperlukan untuk klarifikasi parameter `:id`
+
+## Severity & Priority
+- **Severity**: High → Resolved
+- **Priority**: Critical → Completed
 # Admin Service Implementation Plan
 
 ## Overview
