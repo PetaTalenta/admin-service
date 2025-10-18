@@ -31,11 +31,13 @@ const getJobStats = async (req, res, next) => {
  */
 const getJobs = async (req, res, next) => {
   try {
-    const { 
-      page = 1, 
-      limit = 50, 
-      status, 
-      user_id, 
+    const {
+      page = 1,
+      limit = 50,
+      status,
+      user_id,
+      user_email,
+      user_username,
       assessment_name,
       date_from,
       date_to,
@@ -46,6 +48,8 @@ const getJobs = async (req, res, next) => {
     const filters = {};
     if (status) filters.status = status;
     if (user_id) filters.user_id = user_id;
+    if (user_email) filters.user_email = user_email;
+    if (user_username) filters.user_username = user_username;
     if (assessment_name) filters.assessment_name = assessment_name;
     if (date_from) filters.date_from = date_from;
     if (date_to) filters.date_to = date_to;

@@ -25,7 +25,6 @@ router.get(
  */
 router.get(
   '/',
-  validateQuery(schemas.jobListQuery),
   jobController.getJobs
 );
 

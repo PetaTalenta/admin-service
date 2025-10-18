@@ -158,6 +158,8 @@ const schemas = {
     limit: Joi.number().integer().min(1).max(100).default(50),
     status: Joi.string().valid('queue', 'processing', 'completed', 'failed', 'cancelled').optional(),
     user_id: Joi.string().uuid().optional(),
+    user_email: Joi.string().optional(),
+    user_username: Joi.string().optional(),
     assessment_name: Joi.string().optional(),
     date_from: Joi.date().iso().optional(),
     date_to: Joi.date().iso().optional(),

@@ -1,9 +1,13 @@
-const { Op, fn, col, literal } = require('sequelize');
+const { fn, col, literal } = require('sequelize');
 const AnalysisJob = require('../models/AnalysisJob');
 const AnalysisResult = require('../models/AnalysisResult');
 const SystemMetrics = require('../models/SystemMetrics');
 const User = require('../models/User');
+const { archiveSequelize } = require('../config/database');
 const logger = require('../utils/logger');
+
+// Use Op from archiveSequelize instance for consistency
+const Op = archiveSequelize.Sequelize.Op;
 
 /**
  * Get job statistics dashboard
@@ -195,27 +199,80 @@ const getJobs = async (page = 1, limit = 50, filters = {}, sortBy = 'created_at'
       };
     }
 
+    // Build include for User
+    const includeUser = {
+      model: User,
+      as: 'user',
+      attributes: ['id', 'email', 'username'],
+      required: false
+    };
+
+    // If filtering by user email or username, get user IDs first
+    let userIds = null;
+    if (filters.user_email || filters.user_username) {
+      const userWhere = {};
+
+      // Build OR condition if both filters are provided
+      if (filters.user_email && filters.user_username) {
+        userWhere[Op.or] = [
+          { email: { [Op.iLike]: `%${filters.user_email}%` } },
+          { username: { [Op.iLike]: `%${filters.user_username}%` } }
+        ];
+      } else if (filters.user_email) {
+        userWhere.email = { [Op.iLike]: `%${filters.user_email}%` };
+      } else if (filters.user_username) {
+        userWhere.username = { [Op.iLike]: `%${filters.user_username}%` };
+      }
+
+      const users = await User.findAll({
+        where: userWhere,
+        attributes: ['id']
+      });
+      userIds = users.map(u => u.id);
+      logger.debug('User IDs found for filtering', { count: userIds.length });
+      if (userIds.length > 0) {
+        where.user_id = { [Op.in]: userIds };
+        // Don't set required: true to avoid issues with cross-schema JOIN count
+        // includeUser.required = true;
+      } else {
+        // No users found, return empty
+        return {
+          jobs: [],
+          pagination: {
+            total: 0,
+            page: parseInt(page),
+            limit: parseInt(limit),
+            totalPages: 0
+          }
+        };
+      }
+    }
+
     // Validate sort field
     const allowedSortFields = ['created_at', 'updated_at', 'completed_at', 'status', 'priority'];
     const validSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'created_at';
     const validSortOrder = ['ASC', 'DESC'].includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
 
-    const { count, rows } = await AnalysisJob.findAndCountAll({
+    // Handle count separately when user filtering is applied to avoid cross-schema JOIN issues
+    let count;
+    if (filters.user_email || filters.user_username) {
+      // Count from AnalysisJob table directly with user_id filter
+      count = await AnalysisJob.count({ where });
+    } else {
+      count = await AnalysisJob.count({ where });
+    }
+
+    // Get jobs with user filtering
+    const jobs = await AnalysisJob.findAll({
       where,
-      include: [{
-        model: User,
-        as: 'user',
-        attributes: ['id', 'email', 'username'],
-        required: false
-      }],
+      include: [includeUser],
       limit,
       offset,
-      order: [[validSortBy, validSortOrder]],
-      distinct: true
+      order: [[validSortBy, validSortOrder]]
     });
 
     return {
-      jobs: rows,
+      jobs,
       pagination: {
         total: count,
         page: parseInt(page),

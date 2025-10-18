@@ -677,6 +677,244 @@ Get user's chat conversations with pagination.
 }
 ```
 
+## Phase 2.5 Endpoints - School Management Module
+
+### School List & Search
+
+#### GET /admin/schools
+
+Get paginated list of schools with search and sorting.
+
+**Authentication**: Required (Bearer token)
+**Rate Limit**: 100 requests per 15 minutes per IP
+
+**Query Parameters**:
+- `page` (integer, optional): Page number (default: 1)
+- `limit` (integer, optional): Items per page (default: 20, max: 100)
+- `search` (string, optional): Search by name, city, or province
+- `sort_by` (string, optional): Sort field (name, city, province, created_at) (default: created_at)
+- `sort_order` (string, optional): Sort order (ASC, DESC) (default: DESC)
+
+**Success Response** (200):
+```json
+{
+  "success": true,
+  "message": "Schools retrieved successfully",
+  "data": {
+    "schools": [
+      {
+        "id": 1,
+        "name": "SMA Dummy 1",
+        "address": "Jl. Dummy 1",
+        "city": "Jakarta",
+        "province": "DKI Jakarta",
+        "created_at": "2025-10-17T07:29:34.371Z"
+      },
+      {
+        "id": 2,
+        "name": "SMA Dummy 2",
+        "address": "Jl. Dummy 2",
+        "city": "Bandung",
+        "province": "Jawa Barat",
+        "created_at": "2025-10-17T07:29:34.371Z"
+      }
+    ],
+    "pagination": {
+      "total": 6,
+      "page": 1,
+      "limit": 3,
+      "totalPages": 2
+    }
+  },
+  "timestamp": "2025-10-18T01:22:02.165Z"
+}
+```
+
+---
+
+### School Details
+
+#### GET /admin/schools/:id
+
+Get detailed information about a specific school including user count.
+
+**Authentication**: Required (Bearer token)
+**Rate Limit**: 100 requests per 15 minutes per IP
+
+**Path Parameters**:
+- `id` (integer): School ID
+
+**Success Response** (200):
+```json
+{
+  "success": true,
+  "message": "School details retrieved successfully",
+  "data": {
+    "school": {
+      "id": 1,
+      "name": "SMA Dummy 1",
+      "address": "Jl. Dummy 1",
+      "city": "Jakarta",
+      "province": "DKI Jakarta",
+      "created_at": "2025-10-17T07:29:34.371Z"
+    },
+    "userCount": 1
+  },
+  "timestamp": "2025-10-18T01:22:17.998Z"
+}
+```
+
+**Error Response** (404):
+```json
+{
+  "success": false,
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "School not found"
+  }
+}
+```
+
+---
+
+### School Creation
+
+#### POST /admin/schools
+
+Create a new school.
+
+**Authentication**: Required (Bearer token)
+**Rate Limit**: 100 requests per 15 minutes per IP
+
+**Request Body**:
+```json
+{
+  "name": "SMA Test Create",
+  "address": "Jl. Create No. 456",
+  "city": "Malang",
+  "province": "Jawa Timur"
+}
+```
+
+**Success Response** (201):
+```json
+{
+  "success": true,
+  "message": "School created successfully",
+  "data": {
+    "id": 8,
+    "name": "SMA Test Create",
+    "address": "Jl. Create No. 456",
+    "city": "Malang",
+    "province": "Jawa Timur",
+    "created_at": "2025-10-18T01:22:10.829Z"
+  },
+  "timestamp": "2025-10-18T01:22:10.834Z"
+}
+```
+
+---
+
+### School Update
+
+#### PUT /admin/schools/:id
+
+Update school information (partial update supported).
+
+**Authentication**: Required (Bearer token)
+**Rate Limit**: 100 requests per 15 minutes per IP
+
+**Path Parameters**:
+- `id` (integer): School ID
+
+**Request Body**:
+```json
+{
+  "name": "SMA Test Updated",
+  "city": "Malang Raya"
+}
+```
+
+**Success Response** (200):
+```json
+{
+  "success": true,
+  "message": "School updated successfully",
+  "data": {
+    "id": 8,
+    "name": "SMA Test Updated",
+    "address": "Jl. Create No. 456",
+    "city": "Malang Raya",
+    "province": "Jawa Timur",
+    "created_at": "2025-10-18T01:22:10.829Z"
+  },
+  "timestamp": "2025-10-18T01:22:25.381Z"
+}
+```
+
+**Error Response** (404):
+```json
+{
+  "success": false,
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "School not found"
+  }
+}
+```
+
+---
+
+### School Deletion
+
+#### DELETE /admin/schools/:id
+
+Delete a school (only if no users are associated with it).
+
+**Authentication**: Required (Bearer token)
+**Rate Limit**: 100 requests per 15 minutes per IP
+
+**Path Parameters**:
+- `id` (integer): School ID
+
+**Success Response** (200):
+```json
+{
+  "success": true,
+  "message": "School deleted successfully",
+  "data": {
+    "message": "School deleted successfully"
+  },
+  "timestamp": "2025-10-18T01:22:33.963Z"
+}
+```
+
+**Error Responses**:
+
+- **404 Not Found**: School not found
+```json
+{
+  "success": false,
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "School not found"
+  }
+}
+```
+
+- **400 Bad Request**: School has associated users
+```json
+{
+  "success": false,
+  "error": {
+    "code": "INVALID_REQUEST",
+    "message": "Cannot delete school. 1 user(s) are associated with this school."
+  }
+}
+```
+
+---
+
 ## Phase 3 Endpoints
 
 ### Job Monitoring Endpoints
@@ -724,6 +962,8 @@ Get paginated list of jobs with filtering and sorting.
 - `limit` (integer, optional): Items per page (default: 50, max: 100)
 - `status` (string, optional): Filter by status (queue, processing, completed, failed, cancelled)
 - `user_id` (uuid, optional): Filter by user ID
+- `user_email` (string, optional): Filter by user email (partial match)
+- `user_username` (string, optional): Filter by username (partial match)
 - `assessment_name` (string, optional): Filter by assessment name (partial match)
 - `date_from` (ISO date, optional): Filter jobs created from this date
 - `date_to` (ISO date, optional): Filter jobs created until this date
