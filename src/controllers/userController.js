@@ -8,12 +8,13 @@ const logger = require('../utils/logger');
  */
 const getUsers = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, search = '', user_type, is_active, auth_provider } = req.query;
+    const { page = 1, limit = 20, search = '', user_type, is_active, auth_provider, school_id } = req.query;
 
     const filter = {};
     if (user_type) filter.user_type = user_type;
     if (is_active !== undefined) filter.is_active = is_active;
     if (auth_provider) filter.auth_provider = auth_provider;
+    if (school_id) filter.school_id = school_id;
 
     logger.info('Fetching users list', {
       page,

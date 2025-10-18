@@ -1,5 +1,6 @@
 const User = require('./User');
 const UserProfile = require('./UserProfile');
+const School = require('./School');
 const AnalysisJob = require('./AnalysisJob');
 const AnalysisResult = require('./AnalysisResult');
 const Conversation = require('./Conversation');
@@ -12,6 +13,22 @@ const UserActivityLog = require('./UserActivityLog');
  * This file should be imported after all models are defined
  * Note: User <-> UserProfile associations are already defined in UserProfile.js
  */
+
+// UserProfile <-> School (Many-to-One)
+// Note: UserProfile is in auth schema, School is in public schema
+UserProfile.belongsTo(School, {
+  foreignKey: 'school_id',
+  targetKey: 'id',
+  as: 'school',
+  constraints: false // Important: disable constraints for cross-schema associations
+});
+
+School.hasMany(UserProfile, {
+  foreignKey: 'school_id',
+  sourceKey: 'id',
+  as: 'profiles',
+  constraints: false
+});
 
 // User <-> AnalysisJob (One-to-Many)
 // Note: User is in auth schema, AnalysisJob is in archive schema
@@ -103,6 +120,7 @@ UsageTracking.belongsTo(Conversation, {
 module.exports = {
   User,
   UserProfile,
+  School,
   AnalysisJob,
   AnalysisResult,
   Conversation,

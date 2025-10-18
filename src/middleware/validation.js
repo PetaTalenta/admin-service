@@ -130,7 +130,8 @@ const schemas = {
     search: Joi.string().allow('').optional(),
     user_type: Joi.string().valid('user', 'admin', 'superadmin').optional(),
     is_active: Joi.boolean().optional(),
-    auth_provider: Joi.string().valid('local', 'google', 'firebase').optional()
+    auth_provider: Joi.string().valid('local', 'google', 'firebase').optional(),
+    school_id: Joi.number().integer().optional()
   }),
   updateUser: Joi.object({
     username: Joi.string().min(3).max(50).optional(),
@@ -178,6 +179,28 @@ const schemas = {
   chatPaginationQuery: Joi.object({
     page: Joi.number().integer().min(1).default(1),
     limit: Joi.number().integer().min(1).max(100).default(50)
+  }),
+  schoolListQuery: Joi.object({
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(20),
+    search: Joi.string().allow('').optional(),
+    sort_by: Joi.string().valid('name', 'city', 'province', 'created_at').default('created_at'),
+    sort_order: Joi.string().valid('ASC', 'DESC', 'asc', 'desc').default('DESC')
+  }),
+  createSchool: Joi.object({
+    name: Joi.string().min(1).max(200).required(),
+    address: Joi.string().allow('').optional(),
+    city: Joi.string().max(100).allow('').optional(),
+    province: Joi.string().max(100).allow('').optional()
+  }),
+  updateSchool: Joi.object({
+    name: Joi.string().min(1).max(200).optional(),
+    address: Joi.string().allow('').optional(),
+    city: Joi.string().max(100).allow('').optional(),
+    province: Joi.string().max(100).allow('').optional()
+  }).min(1),
+  schoolId: Joi.object({
+    id: Joi.number().integer().required()
   })
 };
 

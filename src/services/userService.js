@@ -1,6 +1,7 @@
 const { Op } = require('sequelize');
 const User = require('../models/User');
 const UserProfile = require('../models/UserProfile');
+const School = require('../models/School');
 const AnalysisJob = require('../models/AnalysisJob');
 const Conversation = require('../models/Conversation');
 const UserActivityLog = require('../models/UserActivityLog');
@@ -12,10 +13,10 @@ const logger = require('../utils/logger');
 const getUsers = async (page = 1, limit = 20, search = '', filter = {}) => {
   try {
     const offset = (page - 1) * limit;
-    
+
     // Build where clause
     const where = {};
-    
+
     // Search by email, username, or full_name
     if (search) {
       where[Op.or] = [
@@ -23,20 +24,26 @@ const getUsers = async (page = 1, limit = 20, search = '', filter = {}) => {
         { username: { [Op.iLike]: `%${search}%` } }
       ];
     }
-    
+
     // Filter by user_type
     if (filter.user_type) {
       where.user_type = filter.user_type;
     }
-    
+
     // Filter by is_active
     if (filter.is_active !== undefined) {
       where.is_active = filter.is_active === 'true' || filter.is_active === true;
     }
-    
+
     // Filter by auth_provider
     if (filter.auth_provider) {
       where.auth_provider = filter.auth_provider;
+    }
+
+    // Build profile where clause for school_id filter
+    const profileWhere = {};
+    if (filter.school_id) {
+      profileWhere.school_id = filter.school_id;
     }
 
     const { count, rows } = await User.findAndCountAll({
@@ -44,7 +51,13 @@ const getUsers = async (page = 1, limit = 20, search = '', filter = {}) => {
       include: [{
         model: UserProfile,
         as: 'profile',
-        required: false
+        required: filter.school_id ? true : false, // Required if filtering by school
+        where: Object.keys(profileWhere).length > 0 ? profileWhere : undefined,
+        include: [{
+          model: School,
+          as: 'school',
+          required: false
+        }]
       }],
       attributes: {
         exclude: ['password_hash']
@@ -82,7 +95,12 @@ const getUserById = async (userId) => {
       include: [{
         model: UserProfile,
         as: 'profile',
-        required: false
+        required: false,
+        include: [{
+          model: School,
+          as: 'school',
+          required: false
+        }]
       }],
       attributes: {
         exclude: ['password_hash']
