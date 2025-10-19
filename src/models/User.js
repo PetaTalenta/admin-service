@@ -68,6 +68,14 @@ const User = authSequelize.define('User', {
     allowNull: true,
     defaultValue: 'active'
   },
+  school_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'schools',
+      key: 'id'
+    }
+  },
   created_at: {
     type: DataTypes.DATE,
     allowNull: false,

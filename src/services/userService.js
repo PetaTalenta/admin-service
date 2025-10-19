@@ -60,7 +60,7 @@ const getUsers = async (page = 1, limit = 20, search = '', filter = {}) => {
         }]
       }],
       attributes: {
-        exclude: ['password_hash']
+        exclude: ['password_hash', 'school_id'] // Exclude school_id from User, use profile.school_id instead
       },
       limit,
       offset,
@@ -103,7 +103,7 @@ const getUserById = async (userId) => {
         }]
       }],
       attributes: {
-        exclude: ['password_hash']
+        exclude: ['password_hash', 'school_id'] // Exclude school_id from User, use profile.school_id instead
       }
     });
 
