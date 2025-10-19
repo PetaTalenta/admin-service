@@ -332,52 +332,98 @@ const getJobById = async (jobId) => {
 
 /**
  * Get job results by job ID
+ * Improved with better error handling and retry logic
  */
 const getJobResults = async (jobId) => {
-  try {
-    const job = await AnalysisJob.findOne({ where: { job_id: jobId } });
+  const maxRetries = 3;
+  let lastError;
 
-    if (!job) {
-      const error = new Error('Job not found');
-      error.statusCode = 404;
-      error.code = 'NOT_FOUND';
-      throw error;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      logger.debug(`Fetching job results - Attempt ${attempt}/${maxRetries}`, { jobId });
+
+      // Fetch job with explicit attributes to ensure data is loaded
+      const job = await AnalysisJob.findByPk(jobId, {
+        attributes: ['id', 'job_id', 'status', 'result_id', 'assessment_name', 'completed_at', 'user_id', 'created_at']
+      });
+
+      if (!job) {
+        const error = new Error(`Job with ID ${jobId} not found in database`);
+        error.statusCode = 404;
+        error.code = 'NOT_FOUND';
+        throw error;
+      }
+
+      if (!job.result_id) {
+        const error = new Error('Job has no results yet. The job may still be processing.');
+        error.statusCode = 404;
+        error.code = 'NOT_FOUND';
+        throw error;
+      }
+
+      // Fetch result with explicit attributes
+      const result = await AnalysisResult.findByPk(job.result_id, {
+        attributes: ['id', 'user_id', 'test_data', 'test_result', 'raw_responses', 'is_public', 'chatbot_id', 'created_at', 'updated_at']
+      });
+
+      if (!result) {
+        const error = new Error(`Result with ID ${job.result_id} not found in database`);
+        error.statusCode = 404;
+        error.code = 'NOT_FOUND';
+        throw error;
+      }
+
+      logger.info('Job results fetched successfully', {
+        jobId,
+        resultId: job.result_id,
+        attempt
+      });
+
+      return {
+        job: {
+          id: job.id,
+          job_id: job.job_id,
+          status: job.status,
+          assessment_name: job.assessment_name,
+          completed_at: job.completed_at,
+          user_id: job.user_id,
+          created_at: job.created_at
+        },
+        result: result.toJSON()
+      };
+    } catch (error) {
+      lastError = error;
+
+      // Don't retry on 404 errors (resource not found)
+      if (error.statusCode === 404) {
+        logger.error('Job or result not found', {
+          jobId,
+          error: error.message,
+          statusCode: error.statusCode
+        });
+        throw error;
+      }
+
+      // Log retry attempt for other errors
+      if (attempt < maxRetries) {
+        logger.warn(`Attempt ${attempt} failed, retrying...`, {
+          jobId,
+          error: error.message,
+          nextAttempt: attempt + 1
+        });
+        // Wait before retrying (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt - 1) * 100));
+      }
     }
-
-    if (!job.result_id) {
-      const error = new Error('Job has no results yet');
-      error.statusCode = 404;
-      error.code = 'NOT_FOUND';
-      throw error;
-    }
-
-    const result = await AnalysisResult.findByPk(job.result_id);
-
-    if (!result) {
-      const error = new Error('Result not found');
-      error.statusCode = 404;
-      error.code = 'NOT_FOUND';
-      throw error;
-    }
-
-    return {
-      job: {
-        id: job.id,
-        job_id: job.job_id,
-        status: job.status,
-        assessment_name: job.assessment_name,
-        completed_at: job.completed_at
-      },
-      result: result.toJSON()
-    };
-  } catch (error) {
-    logger.error('Error fetching job results', {
-      jobId,
-      error: error.message,
-      stack: error.stack
-    });
-    throw error;
   }
+
+  // All retries exhausted
+  logger.error('Failed to fetch job results after all retries', {
+    jobId,
+    attempts: maxRetries,
+    lastError: lastError?.message
+  });
+  throw lastError;
 };
 
 module.exports = {

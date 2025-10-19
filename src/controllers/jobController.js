@@ -106,25 +106,42 @@ const getJobById = async (req, res, next) => {
 /**
  * Get job results by job ID
  * GET /admin/jobs/:id/results
+ *
+ * Returns job details along with analysis results
+ * Includes retry logic for transient failures
  */
 const getJobResults = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const startTime = Date.now();
 
-    logger.info('Fetching job results', {
+    logger.info('Fetching job results request', {
       jobId: id,
-      adminId: req.admin.id
+      adminId: req.admin.id,
+      timestamp: new Date().toISOString()
     });
 
     const results = await jobService.getJobResults(id);
 
+    const duration = Date.now() - startTime;
+    logger.info('Job results fetched successfully', {
+      jobId: id,
+      duration: `${duration}ms`,
+      adminId: req.admin?.id
+    });
+
     res.json(successResponse(results, 'Job results retrieved successfully'));
   } catch (error) {
+    const duration = Date.now() - startTime;
     logger.error('Error fetching job results', {
       jobId: req.params.id,
       error: error.message,
+      errorCode: error.code,
+      statusCode: error.statusCode,
       stack: error.stack,
-      adminId: req.admin?.id
+      duration: `${duration}ms`,
+      adminId: req.admin?.id,
+      timestamp: new Date().toISOString()
     });
     next(error);
   }
