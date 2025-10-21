@@ -14,6 +14,22 @@ const UserActivityLog = require('./UserActivityLog');
  * Note: User <-> UserProfile associations are already defined in UserProfile.js
  */
 
+// User <-> School (Many-to-One)
+// Note: User is in auth schema, School is in public schema
+User.belongsTo(School, {
+  foreignKey: 'school_id',
+  targetKey: 'id',
+  as: 'userSchool', // Different alias to avoid conflict with profile.school
+  constraints: false // Important: disable constraints for cross-schema associations
+});
+
+School.hasMany(User, {
+  foreignKey: 'school_id',
+  sourceKey: 'id',
+  as: 'users',
+  constraints: false
+});
+
 // UserProfile <-> School (Many-to-One)
 // Note: UserProfile is in auth schema, School is in public schema
 UserProfile.belongsTo(School, {

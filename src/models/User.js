@@ -71,6 +71,7 @@ const User = authSequelize.define('User', {
   school_id: {
     type: DataTypes.INTEGER,
     allowNull: true,
+    field: 'school_id',
     references: {
       model: 'schools',
       key: 'id'

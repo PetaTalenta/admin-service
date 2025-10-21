@@ -40,27 +40,27 @@ const getUsers = async (page = 1, limit = 20, search = '', filter = {}) => {
       where.auth_provider = filter.auth_provider;
     }
 
-    // Build profile where clause for school_id filter
-    const profileWhere = {};
+    // Filter by school_id - check users.school_id (profiles are optional)
     if (filter.school_id) {
-      profileWhere.school_id = filter.school_id;
+      where.school_id = parseInt(filter.school_id);
     }
 
     const { count, rows } = await User.findAndCountAll({
       where,
-      include: [{
-        model: UserProfile,
-        as: 'profile',
-        required: filter.school_id ? true : false, // Required if filtering by school
-        where: Object.keys(profileWhere).length > 0 ? profileWhere : undefined,
-        include: [{
-          model: School,
-          as: 'school',
-          required: false
-        }]
-      }],
+      include: [
+        {
+          model: UserProfile,
+          as: 'profile',
+          required: false,
+          include: [{
+            model: School,
+            as: 'school',
+            required: false
+          }]
+        }
+      ],
       attributes: {
-        exclude: ['password_hash', 'school_id'] // Exclude school_id from User, use profile.school_id instead
+        exclude: ['password_hash'] // Keep school_id to support users without profiles
       },
       limit,
       offset,
@@ -68,8 +68,63 @@ const getUsers = async (page = 1, limit = 20, search = '', filter = {}) => {
       distinct: true
     });
 
+    // Collect all school_ids from users who need school data populated
+    const schoolIdsToFetch = new Set();
+    rows.forEach(user => {
+      const userData = user.toJSON();
+      // Need to fetch school if:
+      // 1. User has school_id but no profile, OR
+      // 2. User has profile but profile doesn't have school data
+      if (userData.school_id && (!userData.profile || !userData.profile.school)) {
+        schoolIdsToFetch.add(userData.school_id);
+      }
+    });
+
+    // Fetch schools for users who need them
+    let schoolsMap = {};
+    if (schoolIdsToFetch.size > 0) {
+      const schools = await School.findAll({
+        where: {
+          id: Array.from(schoolIdsToFetch)
+        }
+      });
+      schoolsMap = schools.reduce((map, school) => {
+        map[school.id] = school.toJSON();
+        return map;
+      }, {});
+    }
+
+    // Post-process to ensure school data is always in profile.school
+    const processedUsers = rows.map(user => {
+      const userData = user.toJSON();
+
+      // If user has school_id but no profile, create a minimal profile with school
+      if (userData.school_id && !userData.profile && schoolsMap[userData.school_id]) {
+        userData.profile = {
+          user_id: userData.id,
+          full_name: null,
+          date_of_birth: null,
+          gender: null,
+          school_id: userData.school_id,
+          created_at: null,
+          updated_at: null,
+          school: schoolsMap[userData.school_id]
+        };
+      }
+      // If user has profile but profile doesn't have school, add it
+      else if (userData.profile && !userData.profile.school && userData.school_id && schoolsMap[userData.school_id]) {
+        userData.profile.school = schoolsMap[userData.school_id];
+        // Also update profile.school_id if it's null
+        if (!userData.profile.school_id) {
+          userData.profile.school_id = userData.school_id;
+        }
+      }
+
+      return userData;
+    });
+
     return {
-      users: rows,
+      users: processedUsers,
       pagination: {
         total: count,
         page: parseInt(page),
@@ -92,18 +147,20 @@ const getUsers = async (page = 1, limit = 20, search = '', filter = {}) => {
 const getUserById = async (userId) => {
   try {
     const user = await User.findByPk(userId, {
-      include: [{
-        model: UserProfile,
-        as: 'profile',
-        required: false,
-        include: [{
-          model: School,
-          as: 'school',
-          required: false
-        }]
-      }],
+      include: [
+        {
+          model: UserProfile,
+          as: 'profile',
+          required: false,
+          include: [{
+            model: School,
+            as: 'school',
+            required: false
+          }]
+        }
+      ],
       attributes: {
-        exclude: ['password_hash', 'school_id'] // Exclude school_id from User, use profile.school_id instead
+        exclude: ['password_hash'] // Keep school_id to support users without profiles
       }
     });
 
@@ -138,8 +195,41 @@ const getUserById = async (userId) => {
       attributes: ['id', 'title', 'status', 'context_type', 'created_at', 'updated_at']
     });
 
+    // Post-process to ensure school data is always in profile.school
+    const userData = user.toJSON();
+
+    // Fetch school if user has school_id but no profile.school
+    if (userData.school_id && (!userData.profile || !userData.profile.school)) {
+      const userSchool = await School.findByPk(userData.school_id);
+      if (userSchool) {
+        const schoolData = userSchool.toJSON();
+
+        // If user has no profile, create a minimal profile with school
+        if (!userData.profile) {
+          userData.profile = {
+            user_id: userData.id,
+            full_name: null,
+            date_of_birth: null,
+            gender: null,
+            school_id: userData.school_id,
+            created_at: null,
+            updated_at: null,
+            school: schoolData
+          };
+        }
+        // If user has profile but no school, add school to profile
+        else {
+          userData.profile.school = schoolData;
+          // Also update profile.school_id if it's null
+          if (!userData.profile.school_id) {
+            userData.profile.school_id = userData.school_id;
+          }
+        }
+      }
+    }
+
     return {
-      user: user.toJSON(),
+      user: userData,
       statistics: {
         jobs: jobStats,
         conversations: conversationCount
